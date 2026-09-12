@@ -33,7 +33,7 @@ esac
 endpoint=$(jsonfilter -i "$source_file" -e '@.endpoint')
 id=$(jsonfilter -i "$source_file" -e '@.id')
 secret=$(jsonfilter -i "$source_file" -e '@.secret')
-log_level=$(jsonfilter -i "$source_file" -e '@.logLevel')
+log_level=$(jsonfilter -i "$source_file" -e '@.logLevel' || true)
 
 [ -n "$endpoint" ] && [ -n "$id" ] && [ -n "$secret" ] || {
 	echo 'Legacy JSON does not contain endpoint, id and secret.' >&2
@@ -66,4 +66,3 @@ chmod 0600 /etc/config/newt
 /etc/init.d/newt enable
 /etc/init.d/newt restart
 echo 'Migration complete. The legacy JSON was left untouched.'
-
