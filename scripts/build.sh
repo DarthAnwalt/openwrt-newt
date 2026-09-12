@@ -25,19 +25,19 @@ tar --zstd -xf "$sdk_archive" -C "$sdk_parent"
 sdk_dir="$(find "$sdk_parent" -mindepth 1 -maxdepth 1 -type d -name 'openwrt-sdk-*' -print -quit)"
 [[ -n "$sdk_dir" ]]
 
-cat >"$sdk_dir/feeds.conf.default" <<EOF
-src-git packages https://github.com/openwrt/packages.git^$PACKAGES_COMMIT
-src-git luci https://github.com/openwrt/luci.git^$LUCI_COMMIT
-EOF
-
-cp -R "$repo_root/package/pangolin-newt" "$sdk_dir/package/pangolin-newt"
-cp -R "$repo_root/luci-app-pangolin-newt" "$sdk_dir/package/luci-app-pangolin-newt"
-
 (
 	cd "$sdk_dir"
-	./scripts/feeds update packages luci
+	# Keep the SDK's checksum-pinned feeds.conf.default. In particular, its
+	# --root=package base feed provides build dependencies such as ucode and Lua.
+	# Replacing this file with only packages/luci makes lucihttp fail to compile.
+	./scripts/feeds update base packages luci
+	./scripts/feeds install -a -p base
 	./scripts/feeds install -p packages golang
 	./scripts/feeds install -a -p luci
+
+	cp -R "$repo_root/package/pangolin-newt" package/pangolin-newt
+	cp -R "$repo_root/luci-app-pangolin-newt" package/luci-app-pangolin-newt
+
 	make defconfig
 	make package/pangolin-newt/download V=s
 	make -j"${BUILD_JOBS:-2}" package/pangolin-newt/compile V=s
