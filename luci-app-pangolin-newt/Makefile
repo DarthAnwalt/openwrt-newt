@@ -3,6 +3,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-pangolin-newt
+PKG_VERSION:=1.15.0
+PKG_RELEASE:=1
 LUCI_TITLE:=LuCI support for Pangolin Newt
 LUCI_DEPENDS:=+luci-base +pangolin-newt
 LUCI_PKGARCH:=all

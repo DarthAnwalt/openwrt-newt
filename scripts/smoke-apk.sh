@@ -13,11 +13,20 @@ luci_apk="$(find "$package_dir" -maxdepth 1 -type f -name 'luci-app-pangolin-new
 "$apk_bin" adbdump --format json "$newt_apk" >/dev/null
 "$apk_bin" adbdump --format json "$luci_apk" >/dev/null
 
-newt_manifest="$("$apk_bin" manifest --allow-untrusted "$newt_apk")"
-luci_manifest="$("$apk_bin" manifest --allow-untrusted "$luci_apk")"
+extract_root="$(mktemp -d)"
+trap 'rm -rf "$extract_root"' EXIT
+mkdir -p "$extract_root/newt" "$extract_root/luci"
+
+# apk(8) manifest queries installed packages and therefore needs an APK
+# database.  For build artifacts, extract the v3 package directly and inspect
+# the resulting tree instead.
+"$apk_bin" --allow-untrusted extract --no-chown \
+	--destination "$extract_root/newt" "$newt_apk" >/dev/null
+"$apk_bin" --allow-untrusted extract --no-chown \
+	--destination "$extract_root/luci" "$luci_apk" >/dev/null
 
 for path in usr/bin/newt etc/init.d/newt etc/config/newt usr/libexec/newt-run usr/libexec/newt-migrate; do
-	grep -q "  $path$" <<<"$newt_manifest"
+	test -e "$extract_root/newt/$path"
 done
 
 for path in \
@@ -25,7 +34,7 @@ for path in \
 	usr/share/rpcd/acl.d/luci-app-pangolin-newt.json \
 	usr/share/rpcd/ucode/pangolin-newt.uc \
 	www/luci-static/resources/view/pangolin-newt/overview.js; do
-	grep -q "  $path$" <<<"$luci_manifest"
+	test -e "$extract_root/luci/$path"
 done
 
 echo 'APK metadata and package contents look correct.'
