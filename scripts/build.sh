@@ -31,9 +31,12 @@ sdk_dir="$(find "$sdk_parent" -mindepth 1 -maxdepth 1 -type d -name 'openwrt-sdk
 	# --root=package base feed provides build dependencies such as ucode and Lua.
 	# Replacing this file with only packages/luci makes lucihttp fail to compile.
 	./scripts/feeds update base packages luci
-	./scripts/feeds install -a -p base
-	./scripts/feeds install -p packages golang
-	./scripts/feeds install -a -p luci
+	./scripts/feeds install -p base \
+		ca-certificates jsonfilter libjson-c libmd libnl-tiny libubox \
+		lua rpcd ubus uci ucode
+	./scripts/feeds install -p packages cgi-io golang
+	./scripts/feeds install -p luci \
+		csstidy luci-base lucihttp rpcd-mod-luci ucode-mod-html
 
 	cp -R "$repo_root/package/pangolin-newt" package/pangolin-newt
 	cp -R "$repo_root/luci-app-pangolin-newt" package/luci-app-pangolin-newt
