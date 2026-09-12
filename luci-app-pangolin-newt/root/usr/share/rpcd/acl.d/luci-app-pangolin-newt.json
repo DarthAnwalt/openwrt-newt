@@ -1,0 +1,17 @@
+{
+	"luci-app-pangolin-newt": {
+		"description": "Grant access to the Newt configuration and status",
+		"read": {
+			"ubus": {
+				"luci.pangolin-newt": [ "get_status", "get_log" ]
+			},
+			"uci": [ "newt" ]
+		},
+		"write": {
+			"ubus": {
+				"luci.pangolin-newt": [ "service_action" ]
+			},
+			"uci": [ "newt" ]
+		}
+	}
+}

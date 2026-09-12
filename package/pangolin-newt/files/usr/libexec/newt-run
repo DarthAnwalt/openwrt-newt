@@ -1,0 +1,57 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+
+set -eu
+umask 077
+
+. /lib/functions.sh
+
+config_load newt
+config_get endpoint main endpoint
+config_get id main id
+config_get secret main secret
+config_get log_level main log_level INFO
+config_get_bool wait_for_network main wait_for_network 1
+config_get dns main dns
+config_get mtu main mtu
+config_get ping_interval main ping_interval
+config_get ping_timeout main ping_timeout
+
+if [ -z "$endpoint" ] || [ -z "$id" ] || [ -z "$secret" ]; then
+	logger -t newt -p daemon.err 'configuration incomplete: endpoint, id and secret are required'
+	exit 2
+fi
+
+if [ "$wait_for_network" -eq 1 ]; then
+	logged=0
+	while ! /sbin/ip route show default 2>/dev/null | /bin/grep -q '^default' && \
+	      ! /sbin/ip -6 route show default 2>/dev/null | /bin/grep -q '^default'; do
+		if [ "$logged" -eq 0 ]; then
+			logger -t newt -p daemon.info 'waiting for a default network route'
+			logged=1
+		fi
+		sleep 5
+	done
+fi
+
+mkdir -p /var/run/newt
+rm -f /var/run/newt/healthy
+
+# Environment variables keep credentials out of argv and procd service.list.
+# CONFIG_FILE prevents a legacy root-owned upstream JSON file from influencing
+# the package-managed UCI configuration.
+export CONFIG_FILE=/dev/null
+export PANGOLIN_ENDPOINT="$endpoint"
+export NEWT_ID="$id"
+export NEWT_SECRET="$secret"
+export LOG_LEVEL="$log_level"
+export HEALTH_FILE=/var/run/newt/healthy
+export NEWT_SYSTEM_SUBSTRATE=OPENWRT_PACKAGE
+
+[ -z "$dns" ] || export DNS="$dns"
+[ -z "$mtu" ] || export MTU="$mtu"
+[ -z "$ping_interval" ] || export PING_INTERVAL="$ping_interval"
+[ -z "$ping_timeout" ] || export PING_TIMEOUT="$ping_timeout"
+
+exec /usr/bin/newt
+

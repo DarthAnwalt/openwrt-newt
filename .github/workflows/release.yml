@@ -1,0 +1,177 @@
+name: Build and publish
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Assemble corresponding source archives
+        run: |
+          source versions.env
+          output="site/repository/source"
+          mkdir -p "$output"
+          upstream="$output/newt-${NEWT_VERSION}-upstream.tar.gz"
+          curl --fail --location --retry 3 \
+            --output "$upstream" \
+            "https://codeload.github.com/fosrl/newt/tar.gz/refs/tags/${NEWT_VERSION}"
+          echo "$NEWT_SOURCE_SHA256  $upstream" | sha256sum -c -
+          ref_name="${GITHUB_REF_NAME//\//-}"
+          git archive --format=tar.gz \
+            --prefix="openwrt-newt-${ref_name}/" \
+            --output="$output/openwrt-newt-${ref_name}-source.tar.gz" \
+            HEAD
+          (
+            cd "$output"
+            sha256sum ./*.tar.gz >SHA256SUMS
+          )
+      - name: Upload corresponding source
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: repository-source
+          path: site
+          if-no-files-found: error
+          retention-days: 14
+
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64_cortex-a53
+            target: mediatek
+            subtarget: filogic
+            series: "25.12"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install SDK host prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes build-essential file gawk gettext git libncurses-dev libssl-dev python3 rsync unzip zstd
+      - name: Validate source tree
+        run: ./scripts/validate.sh
+      - name: Validate release tag
+        if: github.ref_type == 'tag'
+        run: |
+          source versions.env
+          expected="v${NEWT_VERSION}-r${NEWT_RELEASE}"
+          test "$GITHUB_REF_NAME" = "$expected" || {
+            echo "Release tag must be $expected, got $GITHUB_REF_NAME." >&2
+            exit 1
+          }
+      - name: Require signing key
+        env:
+          APK_SIGNING_KEY_B64: ${{ secrets.APK_SIGNING_KEY_B64 }}
+        run: |
+          test -n "$APK_SIGNING_KEY_B64" || {
+            echo "Repository secret APK_SIGNING_KEY_B64 is required." >&2
+            exit 1
+          }
+      - name: Build APK packages
+        env:
+          OUTPUT_DIR: ${{ github.workspace }}/dist/${{ matrix.arch }}
+          BUILD_JOBS: "2"
+        run: ./scripts/build.sh
+      - name: Sign repository index
+        env:
+          APK_SIGNING_KEY_B64: ${{ secrets.APK_SIGNING_KEY_B64 }}
+        run: |
+          key_file="$RUNNER_TEMP/openwrt-newt-private-key.pem"
+          trap 'rm -f "$key_file"' EXIT
+          printf '%s' "$APK_SIGNING_KEY_B64" | base64 --decode >"$key_file"
+          chmod 0600 "$key_file"
+          sdk_dir="$(cat work/sdk-path)"
+          repository_dir="site/repository/${{ matrix.series }}/${{ matrix.arch }}"
+          ./scripts/make-repository.sh \
+            "$sdk_dir/staging_dir/host/bin/apk" \
+            "$key_file" \
+            "$repository_dir" \
+            "site/repository/openwrt-newt.pem" \
+            dist/${{ matrix.arch }}/*.apk
+      - name: Upload repository fragment
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: repository-${{ matrix.arch }}
+          path: site
+          if-no-files-found: error
+          retention-days: 14
+
+  assemble:
+    needs: [build, source]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download repository fragments
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: repository-*
+          path: site
+          merge-multiple: true
+      - name: Add repository landing page
+        run: |
+          cat >site/index.html <<'EOF'
+          <!doctype html>
+          <meta charset="utf-8">
+          <title>openwrt-newt APK repository</title>
+          <h1>openwrt-newt APK repository</h1>
+          <p>See the project README for key import and installation instructions.</p>
+          EOF
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+      - name: Preserve assembled repository
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: signed-apk-repository
+          path: site/repository
+          if-no-files-found: error
+          retention-days: 30
+
+  deploy:
+    needs: assemble
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  github-release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: assemble
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download signed repository
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: signed-apk-repository
+          path: repository
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mapfile -d '' assets < <(find repository -type f -print0)
+          gh release create "$GITHUB_REF_NAME" "${assets[@]}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "$GITHUB_REF_NAME" \
+            --notes "Signed OpenWrt 25.12 APK repository and packages. See the README for installation instructions."

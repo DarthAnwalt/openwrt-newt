@@ -1,0 +1,13 @@
+{
+	"admin/services/pangolin-newt": {
+		"title": "Newt",
+		"order": 65,
+		"action": {
+			"type": "view",
+			"path": "pangolin-newt/overview"
+		},
+		"depends": {
+			"acl": [ "luci-app-pangolin-newt" ]
+		}
+	}
+}

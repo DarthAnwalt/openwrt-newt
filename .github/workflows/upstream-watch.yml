@@ -1,0 +1,39 @@
+name: Watch upstream Newt
+
+on:
+  schedule:
+    - cron: "23 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Open an issue for a new upstream release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          source versions.env
+          latest="$(gh api repos/fosrl/newt/releases/latest --jq '.tag_name | ltrimstr("v")')"
+          test -n "$latest"
+          if test "$latest" = "$NEWT_VERSION"; then
+            echo "Already tracking Newt $latest."
+            exit 0
+          fi
+          title="New upstream Newt release: $latest"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "$title in:title" --json title --jq 'length')"
+          if test "$existing" -gt 0; then
+            echo "An update issue already exists."
+            exit 0
+          fi
+          gh issue create \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$title" \
+            --body "Newt $latest is available. Update PKG_VERSION and versions.env, recompute the codeload SHA256, review release notes and license changes, build in the pinned SDK, and test on a router before tagging a release. This workflow intentionally does not publish updates automatically."
+

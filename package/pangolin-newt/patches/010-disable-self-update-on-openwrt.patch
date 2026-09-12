@@ -1,0 +1,28 @@
+Subject: [PATCH] updates: leave package-managed binaries to apk
+License: AGPL-3.0-only
+
+--- a/updates/selfupdate.go
++++ b/updates/selfupdate.go
+@@ -51,16 +51,15 @@ type versionResponse struct {
+ }
+ 
+-// ErrAutoUpdateUnsupportedInOfficialContainer indicates auto-update is not
+-// available when running inside official Fossorial container images.
+-var ErrAutoUpdateUnsupportedInOfficialContainer = errors.New("auto-update unsupported in official Fossorial container images")
++// ErrAutoUpdateUnsupportedInOfficialContainer indicates auto-update is not
++// available when the executable is owned by an external package manager.
++var ErrAutoUpdateUnsupportedInOfficialContainer = errors.New("auto-update disabled for externally managed distributions")
+ 
+-// isOfficialContainer returns true when the process is running inside an
+-// official Fossorial-built container image.  The image sets
+-// NEWT_SYSTEM_SUBSTRATE="CONTAINER" at build time; users running newt in their own
+-// containers (or bare-metal) will not have this variable set.
++// isOfficialContainer also treats the OpenWrt package as externally managed.
++// In both cases the distribution update mechanism must replace the binary.
+ func isOfficialContainer() bool {
+-	return os.Getenv("NEWT_SYSTEM_SUBSTRATE") == "CONTAINER"
++	substrate := os.Getenv("NEWT_SYSTEM_SUBSTRATE")
++	return substrate == "CONTAINER" || substrate == "OPENWRT_PACKAGE"
+ }
+ 
+ // platform returns the OS+arch string used in the newt release binary names,

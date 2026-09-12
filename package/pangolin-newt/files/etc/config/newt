@@ -1,0 +1,14 @@
+config newt 'main'
+	option enabled '0'
+	option endpoint ''
+	option id ''
+	option secret ''
+	option log_level 'INFO'
+	option wait_for_network '1'
+
+	# Optional advanced settings already understood by the launcher.
+	# option dns '9.9.9.9'
+	# option mtu '1280'
+	# option ping_interval '15s'
+	# option ping_timeout '7s'
+
