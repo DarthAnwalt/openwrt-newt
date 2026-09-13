@@ -98,24 +98,36 @@ function updateStatus(status, logData) {
 function updatePackageStatus(status) {
 	status = status || {};
 	let known = !!status.installed_newt && !!status.available_newt;
+	let running = !!status.update_running;
+	let failed = status.update_state == 'error';
 
 	let installed = document.getElementById('newt-package-installed');
 	let available = document.getElementById('newt-package-available');
 	let state = document.getElementById('newt-package-update-state');
+	let checkButton = document.getElementById('newt-package-check');
 	let installButton = document.getElementById('newt-package-install');
+	let output = document.getElementById('newt-package-output');
 
 	if (installed)
 		installed.replaceChildren(text(status.installed_newt));
 	if (available)
 		available.replaceChildren(text(status.available_newt));
 	if (state) {
-		state.className = status.update_available ? 'label notice' :
-			(known ? 'label success' : 'label warning');
-		state.replaceChildren(text(status.update_available ? _('Update available') :
-			(known ? _('Up to date') : _('Availability unknown'))));
+		state.className = running || status.update_available ? 'label notice' :
+			(failed || !known ? 'label warning' : 'label success');
+		state.replaceChildren(text(running ? _('Package operation in progress') :
+			(failed ? _('Last package operation failed') :
+				(status.update_available ? _('Update available') :
+					(known ? _('Up to date') : _('Availability unknown'))))));
 	}
+	if (checkButton)
+		checkButton.disabled = running;
 	if (installButton)
-		installButton.disabled = !status.update_available;
+		installButton.disabled = running || !status.update_available;
+	if (output) {
+		output.style.display = failed && status.update_output ? '' : 'none';
+		output.replaceChildren(text(status.update_output));
+	}
 }
 
 return view.extend({
@@ -151,13 +163,10 @@ return view.extend({
 				throw new Error(result.error || result.output || _('Package action failed'));
 
 			updatePackageStatus(result.status);
-			ui.addNotification(null, E('p', [ text(action == 'upgrade' ?
-				_('Newt packages were updated. Reload this page if its interface changed.') :
-				_('Package indexes refreshed.')) ]), 'info');
+			ui.addNotification(null, E('p', [ text(_('Package operation started. Status will update automatically.')) ]), 'info');
 		}).catch(function(error) {
 			ui.addNotification(null, E('p', [ text(error.message) ]), 'error');
 		}).then(function() {
-			button.disabled = false;
 			return callPackageStatus();
 		}).then(updatePackageStatus);
 	},
@@ -206,6 +215,8 @@ return view.extend({
 		let logData = data[1] || {};
 		let packageStatus = data[2] || {};
 		let packageStatusKnown = !!packageStatus.installed_newt && !!packageStatus.available_newt;
+		let packageUpdateRunning = !!packageStatus.update_running;
+		let packageUpdateFailed = packageStatus.update_state == 'error';
 		let statusSection = E('div', { 'class': 'cbi-section' }, [
 			E('h3', {}, [ text(_('Status')) ]),
 			E('table', { 'class': 'table' }, [
@@ -246,22 +257,31 @@ return view.extend({
 				E('tr', {}, [ E('td', {}, [ text(_('State')) ]), E('td', {}, [
 					E('span', {
 						'id': 'newt-package-update-state',
-						'class': packageStatus.update_available ? 'label notice' :
-							(packageStatusKnown ? 'label success' : 'label warning')
-					}, [ text(packageStatus.update_available ? _('Update available') :
-						(packageStatusKnown ? _('Up to date') : _('Availability unknown'))) ])
+						'class': packageUpdateRunning || packageStatus.update_available ? 'label notice' :
+							(packageUpdateFailed || !packageStatusKnown ? 'label warning' : 'label success')
+					}, [ text(packageUpdateRunning ? _('Package operation in progress') :
+						(packageUpdateFailed ? _('Last package operation failed') :
+							(packageStatus.update_available ? _('Update available') :
+								(packageStatusKnown ? _('Up to date') : _('Availability unknown'))))) ])
 				]) ])
 			]),
+			E('pre', {
+				'id': 'newt-package-output',
+				'style': (packageUpdateFailed && packageStatus.update_output ? '' : 'display:none;') +
+					'max-height:12em;overflow:auto;white-space:pre-wrap'
+			}, [ text(packageStatus.update_output) ]),
 			E('div', { 'class': 'right' }, [
 				E('button', {
+					'id': 'newt-package-check',
 					'class': 'btn cbi-button cbi-button-action',
+					'disabled': packageUpdateRunning,
 					'click': ui.createHandlerFn(this, this.handlePackageAction, 'check')
 				}, [ text(_('Check for updates')) ]),
 				' ',
 				E('button', {
 					'id': 'newt-package-install',
 					'class': 'btn cbi-button cbi-button-apply',
-					'disabled': !packageStatus.update_available,
+					'disabled': packageUpdateRunning || !packageStatus.update_available,
 					'click': ui.createHandlerFn(this, this.handlePackageAction, 'upgrade')
 				}, [ text(_('Install update')) ])
 			])
@@ -276,8 +296,9 @@ return view.extend({
 		]);
 
 		poll.add(function() {
-			return Promise.all([ callStatus(), callLog() ]).then(function(values) {
+			return Promise.all([ callStatus(), callLog(), callPackageStatus() ]).then(function(values) {
 				updateStatus(values[0], values[1]);
+				updatePackageStatus(values[2]);
 			});
 		}, 5);
 

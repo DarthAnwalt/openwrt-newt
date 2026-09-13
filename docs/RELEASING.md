@@ -23,8 +23,9 @@
 13. On a router with a manual install, prove `install.sh --migrate` moves the
     legacy init script out of `/etc/init.d`, retains the JSON and backup, starts
     exactly one process, and creates `/var/run/newt/healthy`.
-14. In LuCI, refresh package indexes and verify that only the two Newt packages
-    are offered to the fixed-name upgrade action.
+14. In LuCI, refresh package indexes and verify that the asynchronous procd
+    worker completes outside the rpcd sandbox and that only the two Newt
+    packages are offered to the fixed-name upgrade action.
 
 If only packaging changes, increment `PKG_RELEASE`. When Newt changes,
 replace `PKG_VERSION` and normally reset `PKG_RELEASE` to 1.

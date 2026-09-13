@@ -9,7 +9,9 @@ cd "$repo_root"
 for script in \
 	package/pangolin-newt/files/etc/init.d/newt \
 	package/pangolin-newt/files/usr/libexec/newt-run \
-	package/pangolin-newt/files/usr/libexec/newt-migrate; do
+	package/pangolin-newt/files/usr/libexec/newt-migrate \
+	luci-app-pangolin-newt/root/etc/init.d/pangolin-newt-update \
+	luci-app-pangolin-newt/root/usr/libexec/pangolin-newt-update; do
 	sh -n "$script"
 done
 
@@ -31,8 +33,15 @@ node --check luci-app-pangolin-newt/htdocs/luci-static/resources/view/pangolin-n
 
 grep -q "const APK_BIN = '/usr/bin/apk';" \
 	luci-app-pangolin-newt/root/usr/share/rpcd/ucode/pangolin-newt.uc
-grep -q 'upgrade pangolin-newt luci-app-pangolin-newt' \
+grep -Fq "init_action(UPDATE_SERVICE, 'start')" \
 	luci-app-pangolin-newt/root/usr/share/rpcd/ucode/pangolin-newt.uc
+grep -Fq '/usr/bin/apk upgrade pangolin-newt luci-app-pangolin-newt' \
+	luci-app-pangolin-newt/root/usr/libexec/pangolin-newt-update
+if grep -Eq '\$\{APK_BIN\} (update|upgrade)' \
+	luci-app-pangolin-newt/root/usr/share/rpcd/ucode/pangolin-newt.uc; then
+	echo 'Networked APK commands must run through the dedicated procd service.' >&2
+	exit 1
+fi
 if grep -Eq 'package_action.*request.*args.*command' \
 	luci-app-pangolin-newt/root/usr/share/rpcd/ucode/pangolin-newt.uc; then
 	echo 'Package RPC must not interpolate request arguments into commands.' >&2
@@ -50,6 +59,8 @@ grep -q '$(INSTALL_CONF).*etc/config/newt' package/pangolin-newt/Makefile
 grep -q '^export CONFIG_FILE=/dev/null$' package/pangolin-newt/files/usr/libexec/newt-run
 grep -q '^exec /usr/bin/newt$' package/pangolin-newt/files/usr/libexec/newt-run
 grep -q 'NEWT_SYSTEM_SUBSTRATE=OPENWRT_PACKAGE' package/pangolin-newt/files/usr/libexec/newt-run
+grep -Fq '/usr/libexec/newt-run' package/pangolin-newt/Makefile
+grep -Fq 'newt.apk-new' package/pangolin-newt/Makefile
 
 if grep -Eq '^set -[^[:space:]]*u' package/pangolin-newt/files/usr/libexec/newt-run; then
 	echo 'newt-run must not enable nounset around OpenWrt shell helpers.' >&2

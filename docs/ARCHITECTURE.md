@@ -3,8 +3,9 @@
 ## Package boundary
 
 `pangolin-newt` owns the binary, service, UCI file, launcher and migration
-helper. `luci-app-pangolin-newt` depends on it and owns only LuCI UI/RPC
-files. The deliberately namespaced APK names leave `newt` and
+helper. `luci-app-pangolin-newt` depends on it and owns the LuCI UI/RPC files
+plus a one-shot procd worker for signed APK refreshes and fixed-name upgrades.
+The deliberately namespaced APK names leave `newt` and
 `luci-app-newt` available for a future upstream or official OpenWrt package;
 runtime paths retain the conventional `newt` name.
 
@@ -15,6 +16,11 @@ environment variables and replaces itself with `/usr/bin/newt`.
 Connectivity is based on Newt's `HEALTH_FILE` feature. Newt writes the file
 after a successful tunnel ping and removes it when the tunnel is lost. This is
 more stable than parsing log wording.
+
+The RPC process only writes an allowlisted `check` or `upgrade` request and
+asks procd to start the worker. The worker runs outside rpcd's syscall sandbox,
+uses an atomic directory lock, and invokes only fixed `/usr/bin/apk` commands.
+Its state and bounded output are exposed back through the read-only status RPC.
 
 ## Source build decision
 

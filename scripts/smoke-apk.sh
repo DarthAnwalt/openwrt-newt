@@ -13,12 +13,13 @@ newt_apk="$package_dir/pangolin-newt-${NEWT_VERSION}-r${NEWT_RELEASE}.apk"
 luci_apk="$package_dir/luci-app-pangolin-newt-${NEWT_VERSION}-r${NEWT_RELEASE}.apk"
 [[ -f "$newt_apk" && -f "$luci_apk" ]]
 
-"$apk_bin" adbdump --format json "$newt_apk" >/dev/null
-"$apk_bin" adbdump --format json "$luci_apk" >/dev/null
-
 extract_root="$(mktemp -d)"
 trap 'rm -rf "$extract_root"' EXIT
 mkdir -p "$extract_root/newt" "$extract_root/luci"
+
+"$apk_bin" adbdump --format json "$newt_apk" >"$extract_root/newt-metadata.json"
+"$apk_bin" adbdump --format json "$luci_apk" >"$extract_root/luci-metadata.json"
+grep -Fq 'newt-launcher-migration-' "$extract_root/newt-metadata.json"
 
 # apk(8) manifest queries installed packages and therefore needs an APK
 # database.  For build artifacts, extract the v3 package directly and inspect
@@ -38,6 +39,8 @@ if grep -Eq '^set -[^[:space:]]*u' "$extract_root/newt/usr/libexec/newt-run"; th
 fi
 
 for path in \
+	etc/init.d/pangolin-newt-update \
+	usr/libexec/pangolin-newt-update \
 	usr/share/luci/menu.d/luci-app-pangolin-newt.json \
 	usr/share/rpcd/acl.d/luci-app-pangolin-newt.json \
 	usr/share/rpcd/ucode/pangolin-newt.uc \
@@ -47,5 +50,8 @@ done
 
 grep -Fq 'get_package_status' "$extract_root/luci/usr/share/rpcd/ucode/pangolin-newt.uc"
 grep -Fq 'package_action' "$extract_root/luci/usr/share/rpcd/ucode/pangolin-newt.uc"
+grep -Fq 'boot()' "$extract_root/luci/etc/init.d/pangolin-newt-update"
+test -x "$extract_root/luci/etc/init.d/pangolin-newt-update"
+test -x "$extract_root/luci/usr/libexec/pangolin-newt-update"
 
 echo 'APK metadata and package contents look correct.'

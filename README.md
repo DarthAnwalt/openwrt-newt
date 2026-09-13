@@ -19,7 +19,7 @@ ready for additional SDK targets.
 |---|---|
 | OpenWrt SDK | 25.12.5, mediatek/filogic |
 | Package architecture | aarch64_cortex-a53 |
-| Newt | 1.16.0-r1 |
+| Newt | 1.16.0-r2 |
 | Package manager | OpenWrt APK v3 |
 
 Exact SDK, feed commits and checksums are recorded in
@@ -159,6 +159,11 @@ test -e /var/run/newt/healthy && echo connected
 The recommended `install.sh --migrate` path performs the backup and removes
 the legacy init-script collision before installing. APK otherwise protects the
 existing `/etc/init.d/newt` and writes the package copy as `newt.apk-new`.
+Starting with `1.16.0-r2`, package post-install also promotes that `.apk-new`
+automatically when the active launcher is recognisably legacy and all three
+required UCI values are already present. It first retains both launchers in a
+mode-`0700` backup directory under `/root`; custom package launchers and
+incomplete configurations are not overwritten.
 
 The legacy JSON is deliberately retained as rollback material, but the package
 launcher exports `CONFIG_FILE=/dev/null`, so it is never loaded. There is only
@@ -178,7 +183,10 @@ apk upgrade pangolin-newt luci-app-pangolin-newt
 The same operation is available in LuCI under **Services → Newt → Package
 update**. **Check for updates** refreshes signed APK indexes. **Install update**
 upgrades only `pangolin-newt` and `luci-app-pangolin-newt`, after an explicit
-confirmation; it never runs an unqualified system-wide upgrade.
+confirmation; it never runs an unqualified system-wide upgrade. Networked APK
+operations run asynchronously in a dedicated one-shot procd service, outside
+the restricted LuCI RPC process. Progress and the last failure are shown in the
+page and the service logs under the `pangolin-newt-update` tag.
 
 Do not use an unqualified `apk upgrade` on OpenWrt. Firmware packages are a
 coherent set and should normally be updated with sysupgrade.
@@ -259,8 +267,8 @@ Enable GitHub Pages with **Source: GitHub Actions**, add the secret, then push a
 tag:
 
 ```sh
-git tag v1.16.0-r1
-git push origin v1.16.0-r1
+git tag v1.16.0-r2
+git push origin v1.16.0-r2
 ```
 
 The weekly upstream watcher opens an issue when a newer Newt release appears.
@@ -279,6 +287,8 @@ See [RELEASING.md](docs/RELEASING.md) for the complete release checklist.
 - Service actions use a strict allowlist.
 - Package actions use a strict allowlist and fixed package names; no browser
   value is interpolated into an APK command.
+- LuCI only queues package actions; a dedicated procd worker performs network
+  access so it does not inherit rpcd's sandbox restrictions.
 - UI status and logs are rendered as text nodes, not HTML.
 - Newt waits for a default route and is supervised by procd with respawn.
 

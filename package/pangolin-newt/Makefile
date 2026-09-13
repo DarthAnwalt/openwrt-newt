@@ -4,7 +4,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=pangolin-newt
 PKG_VERSION:=1.16.0
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=newt-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/fosrl/newt/tar.gz/refs/tags/$(PKG_VERSION)?
@@ -58,6 +58,36 @@ define Package/pangolin-newt/install
 	$(INSTALL_BIN) ./files/usr/libexec/newt-migrate $(1)/usr/libexec/newt-migrate
 	$(INSTALL_DIR) $(1)/usr/share/licenses/newt
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/LICENSE $(1)/usr/share/licenses/newt/LICENSE
+endef
+
+define Package/pangolin-newt/postinst
+#!/bin/sh
+# APK preserves a pre-existing launcher in /etc and writes the packaged copy as
+# .apk-new. Promote it only when the active file is recognisably the legacy
+# launcher and UCI already contains complete credentials. User-customised
+# package launchers remain untouched.
+if [ -z "$${IPKG_INSTROOT}" ] && \
+   [ -r /etc/init.d/newt ] && \
+   [ -r /etc/init.d/newt.apk-new ] && \
+   ! grep -Fq '/usr/libexec/newt-run' /etc/init.d/newt && \
+   grep -Fq '/usr/libexec/newt-run' /etc/init.d/newt.apk-new && \
+   [ -n "$$(uci -q get newt.main.endpoint 2>/dev/null)" ] && \
+   [ -n "$$(uci -q get newt.main.id 2>/dev/null)" ] && \
+   [ -n "$$(uci -q get newt.main.secret 2>/dev/null)" ]; then
+	umask 077
+	backup="/root/newt-launcher-migration-$$(date +%Y%m%d-%H%M%S)-$$$$"
+	mkdir -m 0700 "$${backup}"
+	cp -p /etc/init.d/newt "$${backup}/newt.legacy"
+	cp -p /etc/init.d/newt.apk-new "$${backup}/newt.package"
+	/etc/init.d/newt stop 2>/dev/null || true
+	mv /etc/init.d/newt "$${backup}/newt.legacy.active"
+	mv /etc/init.d/newt.apk-new /etc/init.d/newt
+	chmod 0755 /etc/init.d/newt
+	/etc/init.d/newt enable
+	/etc/init.d/newt restart
+	logger -t pangolin-newt "legacy launcher migrated; backup: $${backup}"
+fi
+exit 0
 endef
 
 $(eval $(call BuildPackage,pangolin-newt))

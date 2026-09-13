@@ -1,0 +1,76 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+
+set -u
+umask 077
+
+ACTION_FILE='/var/run/pangolin-newt-update.action'
+STATE_FILE='/var/run/pangolin-newt-update.state'
+EXIT_FILE='/var/run/pangolin-newt-update.exit'
+LOG_FILE='/var/run/pangolin-newt-update.log'
+LOCK_DIR='/var/lock/pangolin-newt-update.lock'
+
+write_state() {
+	printf '%s\n' "$1" >"$STATE_FILE.$$"
+	mv "$STATE_FILE.$$" "$STATE_FILE"
+}
+
+if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+	logger -t pangolin-newt-update 'an APK operation is already running'
+	exit 0
+fi
+
+finished=0
+cleanup() {
+	if [ "$finished" -eq 0 ]; then
+		write_state error
+		printf '%s\n' 143 >"$EXIT_FILE"
+		logger -t pangolin-newt-update 'APK operation was interrupted'
+	fi
+	rm -f "$ACTION_FILE"
+	rmdir "$LOCK_DIR" 2>/dev/null || true
+}
+trap cleanup EXIT
+trap 'exit 143' HUP INT TERM
+
+action="$(sed -n '1p' "$ACTION_FILE" 2>/dev/null)"
+case "$action" in
+	check|upgrade) ;;
+	*)
+		printf '%s\n' 'Invalid or missing package action.' >"$LOG_FILE"
+		printf '%s\n' 2 >"$EXIT_FILE"
+		write_state error
+		finished=1
+		exit 0
+		;;
+esac
+
+: >"$LOG_FILE"
+write_state running
+logger -t pangolin-newt-update "starting package action: $action"
+
+if /usr/bin/apk update >"$LOG_FILE" 2>&1; then
+	rc=0
+else
+	rc=$?
+fi
+
+if [ "$rc" -eq 0 ] && [ "$action" = upgrade ]; then
+	if /usr/bin/apk upgrade pangolin-newt luci-app-pangolin-newt >>"$LOG_FILE" 2>&1; then
+		rc=0
+	else
+		rc=$?
+	fi
+fi
+
+printf '%s\n' "$rc" >"$EXIT_FILE"
+if [ "$rc" -eq 0 ]; then
+	write_state success
+	logger -t pangolin-newt-update "package action completed: $action"
+else
+	write_state error
+	logger -t pangolin-newt-update "package action failed: $action (exit $rc)"
+fi
+
+finished=1
+exit 0

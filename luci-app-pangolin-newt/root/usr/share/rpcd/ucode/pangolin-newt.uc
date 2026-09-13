@@ -3,7 +3,7 @@
 
 'use strict';
 
-import { access, popen, readfile } from 'fs';
+import { access, popen, readfile, writefile } from 'fs';
 import { cursor } from 'uci';
 import { init_action, init_enabled, process_list } from 'luci.sys';
 
@@ -11,6 +11,12 @@ const HEALTH_FILE = '/var/run/newt/healthy';
 const NEWT_BIN = '/usr/bin/newt';
 const APK_BIN = '/usr/bin/apk';
 const PACKAGE_NAMES = [ 'pangolin-newt', 'luci-app-pangolin-newt' ];
+const UPDATE_SERVICE = 'pangolin-newt-update';
+const UPDATE_ACTION_FILE = '/var/run/pangolin-newt-update.action';
+const UPDATE_STATE_FILE = '/var/run/pangolin-newt-update.state';
+const UPDATE_EXIT_FILE = '/var/run/pangolin-newt-update.exit';
+const UPDATE_LOG_FILE = '/var/run/pangolin-newt-update.log';
+const UPDATE_LOCK_DIR = '/var/lock/pangolin-newt-update.lock';
 const uci = cursor();
 
 function runCommand(command) {
@@ -55,6 +61,9 @@ function getPackageStatus() {
 	let installed = queryPackageVersions('installed', false);
 	let available = queryPackageVersions('repositories', false);
 	let upgradable = queryPackageVersions('system', true);
+	let updateState = trim(readfile(UPDATE_STATE_FILE) || 'idle');
+	let updateExit = trim(readfile(UPDATE_EXIT_FILE) || '');
+	let updateOutput = readfile(UPDATE_LOG_FILE) || '';
 
 	return {
 		installed_newt: installed['pangolin-newt'] || null,
@@ -62,7 +71,11 @@ function getPackageStatus() {
 		installed_luci: installed['luci-app-pangolin-newt'] || null,
 		available_luci: available['luci-app-pangolin-newt'] || null,
 		update_available: !!upgradable['pangolin-newt'] ||
-			!!upgradable['luci-app-pangolin-newt']
+			!!upgradable['luci-app-pangolin-newt'],
+		update_state: updateState,
+		update_running: updateState == 'queued' || updateState == 'running' || !!access(UPDATE_LOCK_DIR),
+		update_exit_code: updateExit ? +updateExit : null,
+		update_output: substr(updateOutput, 0, 8192)
 	};
 }
 
@@ -175,19 +188,30 @@ const methods = {
 		args: { action: 'action' },
 		call: function(request) {
 			let action = request?.args?.action || '';
-			let command;
 
-			if (action == 'check')
-				command = `${APK_BIN} update`;
-			else if (action == 'upgrade')
-				command = `${APK_BIN} update && ${APK_BIN} upgrade pangolin-newt luci-app-pangolin-newt`;
-			else
+			if (index([ 'check', 'upgrade' ], action) < 0)
 				return { success: false, error: 'Invalid package action' };
 
-			let result = runCommand(command);
-			let status = getPackageStatus();
-			result.status = status;
-			return result;
+			let current = getPackageStatus();
+			if (current.update_running)
+				return { success: false, error: 'A package operation is already running', status: current };
+
+			try {
+				writefile(UPDATE_ACTION_FILE, `${action}\n`);
+				writefile(UPDATE_STATE_FILE, 'queued\n');
+				writefile(UPDATE_EXIT_FILE, '');
+			}
+			catch (err) {
+				return { success: false, error: `Unable to queue package action: ${err}` };
+			}
+
+			let result = init_action(UPDATE_SERVICE, 'start');
+			if (result !== 0) {
+				writefile(UPDATE_STATE_FILE, 'error\n');
+				return { success: false, error: 'Unable to start the package update service' };
+			}
+
+			return { success: true, queued: true, status: getPackageStatus() };
 		}
 	}
 };
