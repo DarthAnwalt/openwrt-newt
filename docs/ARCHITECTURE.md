@@ -22,6 +22,16 @@ asks procd to start the worker. The worker runs outside rpcd's syscall sandbox,
 uses an atomic directory lock, and invokes only fixed `/usr/bin/apk` commands.
 Its state and bounded output are exposed back through the read-only status RPC.
 
+`luci-app-zt` is a separate architecture-independent package. It depends on the
+official OpenWrt `zerotier` package and owns no daemon files. Its JSONMap is fed
+by a sanitizing RPC instead of direct UCI ACL access, so the identity secret is
+never returned to the browser. The RPC preserves that secret while replacing
+only validated global options and network sections.
+
+The ZeroTier update worker has separate fixed actions for `zerotier` and
+`luci-app-zt`. This permits the official daemon and our GUI to follow their own
+package versions and repositories while sharing one signed index refresh.
+
 ## Source build decision
 
 Newt 1.16.0 declares Go 1.25.0. The packages feed commit shipped with OpenWrt

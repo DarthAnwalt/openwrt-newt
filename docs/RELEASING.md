@@ -1,4 +1,4 @@
-# Release checklist
+# Newt release checklist
 
 1. Review the upstream Newt release notes and license.
 2. Update `PKG_VERSION`, `PKG_RELEASE` and `versions.env`.
@@ -29,3 +29,20 @@
 
 If only packaging changes, increment `PKG_RELEASE`. When Newt changes,
 replace `PKG_VERSION` and normally reset `PKG_RELEASE` to 1.
+
+## luci-app-zt release checklist
+
+1. Update `LUCI_ZT_VERSION`, `LUCI_ZT_RELEASE` and the package Makefile.
+2. Review the OpenWrt 25.12 `zerotier` UCI schema and JSON CLI output for
+   compatibility changes.
+3. Run static validation and the full pinned-SDK build.
+4. Confirm the APK declares `zerotier` as a dependency and
+   `luci-app-zerotier` as a conflict.
+5. On a router with an existing identity, install the package and verify the
+   identity secret is unchanged and absent from all RPC responses.
+6. Test configuration save/apply, multiple network sections, service controls,
+   runtime JSON tables and log redaction.
+7. Run the asynchronous update check and test the two fixed-name upgrade
+   actions independently.
+8. Tag `luci-app-zt-v<version>-r<release>`. The repository release contains all
+   current packages, but package versions remain independent.
