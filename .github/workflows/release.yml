@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+      - "luci-app-zt-v*"
   workflow_dispatch:
 
 permissions:

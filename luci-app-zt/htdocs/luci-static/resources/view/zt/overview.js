@@ -82,6 +82,14 @@ function formatUptime(seconds) {
 	return parts.join(' ');
 }
 
+function validateAbsolutePath(sectionId, value) {
+	if (!value)
+		return true;
+	if (!/^\/[A-Za-z0-9_.\/-]+$/.test(value) || /(^|\/)\.\.(\/|$)/.test(value))
+		return _('Enter a safe absolute path without “..” components.');
+	return true;
+}
+
 function statusValue(id, label, good) {
 	return E('span', {
 		'id': id,
@@ -347,10 +355,12 @@ return view.extend({
 		o = s.option(form.Value, 'local_conf_path', _('local.conf path'),
 			_('Optional absolute path to a persistent ZeroTier local.conf file.'));
 		o.placeholder = '/etc/zerotier.conf';
+		o.validate = validateAbsolutePath;
 
 		o = s.option(form.Value, 'config_path', _('Persistent state directory'),
 			_('Optional persistent directory for moons, controller state and other advanced configuration.'));
 		o.placeholder = '/mnt/storage/zerotier';
+		o.validate = validateAbsolutePath;
 
 		o = s.option(form.Flag, 'copy_config_path', _('Copy persistent state to RAM'),
 			_('Copy the persistent directory into /var/lib instead of using a symbolic link.'));
