@@ -7,8 +7,8 @@ License: AGPL-3.0-only
  }
  
 -// ErrAutoUpdateUnsupportedInOfficialContainer indicates auto-update is not
--// available when running inside official Fossorial container images.
--var ErrAutoUpdateUnsupportedInOfficialContainer = errors.New("auto-update unsupported in official Fossorial container images")
+-// available when running inside container images.
+-var ErrAutoUpdateUnsupportedInOfficialContainer = errors.New("auto-update unsupported in container images")
 +// ErrAutoUpdateUnsupportedInOfficialContainer indicates auto-update is not
 +// available when the executable is owned by an external package manager.
 +var ErrAutoUpdateUnsupportedInOfficialContainer = errors.New("auto-update disabled for externally managed distributions")
