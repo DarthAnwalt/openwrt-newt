@@ -5,7 +5,7 @@
 
 import { access, popen, readfile, writefile } from 'fs';
 import { cursor } from 'uci';
-import { init_action, init_enabled, process_list } from 'luci.sys';
+import { init_action, init_enabled } from 'luci.sys';
 
 const ZEROTIER_CLI = '/usr/bin/zerotier-cli';
 const APK_BIN = '/usr/bin/apk';
@@ -187,9 +187,20 @@ function setConfig(config) {
 }
 
 function getProcess() {
-	for (let proc in process_list()) {
-		if (match(proc.COMMAND, /(^|\/)zerotier-one( |$)/))
-			return proc;
+	let result = runCommand('/bin/ubus call service list \'{"name":"zerotier"}\'', 65536);
+	if (!result.success)
+		return null;
+
+	try {
+		let instances = json(result.output)?.zerotier?.instances || {};
+		for (let name in instances) {
+			let instance = instances[name];
+			if (instance?.running && instance?.pid)
+				return { PID: instance.pid };
+		}
+	}
+	catch (err) {
+		return null;
 	}
 
 	return null;
