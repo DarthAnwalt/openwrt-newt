@@ -3,12 +3,15 @@
 
 set -euo pipefail
 
+repo_root="$(cd "$(dirname "$0")/.." && pwd)"
+source "$repo_root/versions.env"
+
 apk_bin="${1:?path to the SDK apk tool is required}"
 package_dir="${2:?package directory is required}"
 
-newt_apk="$(find "$package_dir" -maxdepth 1 -type f -name 'pangolin-newt-*.apk' -print -quit)"
-luci_apk="$(find "$package_dir" -maxdepth 1 -type f -name 'luci-app-pangolin-newt-*.apk' -print -quit)"
-[[ -n "$newt_apk" && -n "$luci_apk" ]]
+newt_apk="$package_dir/pangolin-newt-${NEWT_VERSION}-r${NEWT_RELEASE}.apk"
+luci_apk="$package_dir/luci-app-pangolin-newt-${NEWT_VERSION}-r${NEWT_RELEASE}.apk"
+[[ -f "$newt_apk" && -f "$luci_apk" ]]
 
 "$apk_bin" adbdump --format json "$newt_apk" >/dev/null
 "$apk_bin" adbdump --format json "$luci_apk" >/dev/null
@@ -29,6 +32,11 @@ for path in usr/bin/newt etc/init.d/newt etc/config/newt usr/libexec/newt-run us
 	test -e "$extract_root/newt/$path"
 done
 
+if grep -Eq '^set -[^[:space:]]*u' "$extract_root/newt/usr/libexec/newt-run"; then
+	echo 'Packaged newt-run enables nounset and is unsafe with OpenWrt shell helpers.' >&2
+	exit 1
+fi
+
 for path in \
 	usr/share/luci/menu.d/luci-app-pangolin-newt.json \
 	usr/share/rpcd/acl.d/luci-app-pangolin-newt.json \
@@ -36,5 +44,8 @@ for path in \
 	www/luci-static/resources/view/pangolin-newt/overview.js; do
 	test -e "$extract_root/luci/$path"
 done
+
+grep -Fq 'get_package_status' "$extract_root/luci/usr/share/rpcd/ucode/pangolin-newt.uc"
+grep -Fq 'package_action' "$extract_root/luci/usr/share/rpcd/ucode/pangolin-newt.uc"
 
 echo 'APK metadata and package contents look correct.'
