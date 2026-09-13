@@ -9,7 +9,62 @@ import { init_action, init_enabled, process_list } from 'luci.sys';
 
 const HEALTH_FILE = '/var/run/newt/healthy';
 const NEWT_BIN = '/usr/bin/newt';
+const APK_BIN = '/usr/bin/apk';
+const PACKAGE_NAMES = [ 'pangolin-newt', 'luci-app-pangolin-newt' ];
 const uci = cursor();
+
+function runCommand(command) {
+	let pipe = popen(`${command} 2>&1`, 'r');
+	if (!pipe)
+		return { success: false, exit_code: -1, output: 'Unable to start command' };
+
+	let output = pipe.read('all') || '';
+	let exitCode = pipe.close();
+
+	return {
+		success: exitCode === 0,
+		exit_code: exitCode,
+		output: substr(output, 0, 65536)
+	};
+}
+
+function queryPackageVersions(source, upgradable) {
+	let filter = upgradable ? ' --upgradable' : '';
+	let command = `${APK_BIN} query --from ${source}${filter}` +
+		` --fields name,version --format json ${join(' ', PACKAGE_NAMES)}`;
+	let result = runCommand(command);
+	let versions = {};
+
+	if (!result.success)
+		return versions;
+
+	try {
+		let packages = json(result.output);
+		for (let pkg in packages)
+			if (index(PACKAGE_NAMES, pkg?.name) >= 0 && type(pkg?.version) == 'string')
+				versions[pkg.name] = pkg.version;
+	}
+	catch (err) {
+		return {};
+	}
+
+	return versions;
+}
+
+function getPackageStatus() {
+	let installed = queryPackageVersions('installed', false);
+	let available = queryPackageVersions('repositories', false);
+	let upgradable = queryPackageVersions('system', true);
+
+	return {
+		installed_newt: installed['pangolin-newt'] || null,
+		available_newt: available['pangolin-newt'] || null,
+		installed_luci: installed['luci-app-pangolin-newt'] || null,
+		available_luci: available['luci-app-pangolin-newt'] || null,
+		update_available: !!upgradable['pangolin-newt'] ||
+			!!upgradable['luci-app-pangolin-newt']
+	};
+}
 
 function getProcess() {
 	for (let proc in process_list()) {
@@ -94,6 +149,12 @@ const methods = {
 		}
 	},
 
+	get_package_status: {
+		call: function() {
+			return getPackageStatus();
+		}
+	},
+
 	service_action: {
 		args: { action: 'action' },
 		call: function(request) {
@@ -107,6 +168,26 @@ const methods = {
 				action: action,
 				exit_code: result
 			};
+		}
+	},
+
+	package_action: {
+		args: { action: 'action' },
+		call: function(request) {
+			let action = request?.args?.action || '';
+			let command;
+
+			if (action == 'check')
+				command = `${APK_BIN} update`;
+			else if (action == 'upgrade')
+				command = `${APK_BIN} update && ${APK_BIN} upgrade pangolin-newt luci-app-pangolin-newt`;
+			else
+				return { success: false, error: 'Invalid package action' };
+
+			let result = runCommand(command);
+			let status = getPackageStatus();
+			result.status = status;
+			return result;
 		}
 	}
 };

@@ -24,6 +24,19 @@ const callAction = rpc.declare({
 	expect: { '': { success: false } }
 });
 
+const callPackageStatus = rpc.declare({
+	object: 'luci.pangolin-newt',
+	method: 'get_package_status',
+	expect: { '': {} }
+});
+
+const callPackageAction = rpc.declare({
+	object: 'luci.pangolin-newt',
+	method: 'package_action',
+	params: [ 'action' ],
+	expect: { '': { success: false } }
+});
+
 function text(value) {
 	return document.createTextNode(value == null ? '-' : String(value));
 }
@@ -82,6 +95,29 @@ function updateStatus(status, logData) {
 		log.replaceChildren(text(logData?.log || _('No log entries.')));
 }
 
+function updatePackageStatus(status) {
+	status = status || {};
+	let known = !!status.installed_newt && !!status.available_newt;
+
+	let installed = document.getElementById('newt-package-installed');
+	let available = document.getElementById('newt-package-available');
+	let state = document.getElementById('newt-package-update-state');
+	let installButton = document.getElementById('newt-package-install');
+
+	if (installed)
+		installed.replaceChildren(text(status.installed_newt));
+	if (available)
+		available.replaceChildren(text(status.available_newt));
+	if (state) {
+		state.className = status.update_available ? 'label notice' :
+			(known ? 'label success' : 'label warning');
+		state.replaceChildren(text(status.update_available ? _('Update available') :
+			(known ? _('Up to date') : _('Availability unknown'))));
+	}
+	if (installButton)
+		installButton.disabled = !status.update_available;
+}
+
 return view.extend({
 	handleServiceAction: function(action, event) {
 		event.currentTarget.blur();
@@ -101,8 +137,33 @@ return view.extend({
 		});
 	},
 
+	handlePackageAction: function(action, event) {
+		if (action == 'upgrade' &&
+		    !window.confirm(_('Install the available Newt package update? The tunnel may briefly reconnect.')))
+			return Promise.resolve();
+
+		let button = event.currentTarget;
+		button.blur();
+		button.disabled = true;
+
+		return callPackageAction(action).then(function(result) {
+			if (!result.success)
+				throw new Error(result.error || result.output || _('Package action failed'));
+
+			updatePackageStatus(result.status);
+			ui.addNotification(null, E('p', [ text(action == 'upgrade' ?
+				_('Newt packages were updated. Reload this page if its interface changed.') :
+				_('Package indexes refreshed.')) ]), 'info');
+		}).catch(function(error) {
+			ui.addNotification(null, E('p', [ text(error.message) ]), 'error');
+		}).then(function() {
+			button.disabled = false;
+			return callPackageStatus();
+		}).then(updatePackageStatus);
+	},
+
 	load: function() {
-		return Promise.all([ callStatus(), callLog() ]);
+		return Promise.all([ callStatus(), callLog(), callPackageStatus() ]);
 	},
 
 	render: function(data) {
@@ -143,6 +204,8 @@ return view.extend({
 
 		let status = data[0] || {};
 		let logData = data[1] || {};
+		let packageStatus = data[2] || {};
+		let packageStatusKnown = !!packageStatus.installed_newt && !!packageStatus.available_newt;
 		let statusSection = E('div', { 'class': 'cbi-section' }, [
 			E('h3', {}, [ text(_('Status')) ]),
 			E('table', { 'class': 'table' }, [
@@ -174,6 +237,36 @@ return view.extend({
 			])
 		]);
 
+		let packageSection = E('div', { 'class': 'cbi-section' }, [
+			E('h3', {}, [ text(_('Package update')) ]),
+			E('p', {}, [ text(_('Only the Newt and LuCI packages from the configured signed repository are checked and upgraded.')) ]),
+			E('table', { 'class': 'table' }, [
+				E('tr', {}, [ E('td', {}, [ text(_('Installed version')) ]), E('td', { 'id': 'newt-package-installed' }, [ text(packageStatus.installed_newt) ]) ]),
+				E('tr', {}, [ E('td', {}, [ text(_('Available version')) ]), E('td', { 'id': 'newt-package-available' }, [ text(packageStatus.available_newt) ]) ]),
+				E('tr', {}, [ E('td', {}, [ text(_('State')) ]), E('td', {}, [
+					E('span', {
+						'id': 'newt-package-update-state',
+						'class': packageStatus.update_available ? 'label notice' :
+							(packageStatusKnown ? 'label success' : 'label warning')
+					}, [ text(packageStatus.update_available ? _('Update available') :
+						(packageStatusKnown ? _('Up to date') : _('Availability unknown'))) ])
+				]) ])
+			]),
+			E('div', { 'class': 'right' }, [
+				E('button', {
+					'class': 'btn cbi-button cbi-button-action',
+					'click': ui.createHandlerFn(this, this.handlePackageAction, 'check')
+				}, [ text(_('Check for updates')) ]),
+				' ',
+				E('button', {
+					'id': 'newt-package-install',
+					'class': 'btn cbi-button cbi-button-apply',
+					'disabled': !packageStatus.update_available,
+					'click': ui.createHandlerFn(this, this.handlePackageAction, 'upgrade')
+				}, [ text(_('Install update')) ])
+			])
+		]);
+
 		let logSection = E('div', { 'class': 'cbi-section' }, [
 			E('h3', {}, [ text(_('Recent log')) ]),
 			E('pre', {
@@ -189,7 +282,7 @@ return view.extend({
 		}, 5);
 
 		return m.render().then(function(formNode) {
-			return E('div', {}, [ statusSection, formNode, logSection ]);
+			return E('div', {}, [ statusSection, formNode, packageSection, logSection ]);
 		});
 	}
 });

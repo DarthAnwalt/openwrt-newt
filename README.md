@@ -19,13 +19,13 @@ ready for additional SDK targets.
 |---|---|
 | OpenWrt SDK | 25.12.5, mediatek/filogic |
 | Package architecture | aarch64_cortex-a53 |
-| Newt | 1.15.0-r2 |
+| Newt | 1.16.0-r1 |
 | Package manager | OpenWrt APK v3 |
 
 Exact SDK, feed commits and checksums are recorded in
 [`versions.env`](versions.env). Newt is built from the exact upstream tag
 using the OpenWrt Go toolchain. OpenWrt 25.12.5's pinned packages feed provides
-Go 1.26; Newt 1.15.0 requires Go 1.25.
+Go 1.26; Newt 1.16.0 requires Go 1.25.
 
 ## One-line install
 
@@ -40,7 +40,19 @@ The installer checks OpenWrt 25.12 and `/etc/apk/arch` for
 repository public key, verifies its pinned SHA-256 fingerprint, adds the feed
 only if it is absent, and installs both packages without
 `--allow-untrusted`. It is safe to run again when updating or repairing the
-installation. It never asks for or handles the Newt ID or secret.
+installation. Normal installation never handles the Newt ID or secret;
+migration mode reads the legacy credentials locally and never prints them.
+
+For an existing manual installation, use the explicit migration mode:
+
+```sh
+uclient-fetch -qO /tmp/install-openwrt-newt.sh https://DarthAnwalt.github.io/openwrt-newt/install.sh && sh /tmp/install-openwrt-newt.sh --migrate
+```
+
+Migration mode validates the legacy JSON, stores the old binary, init script
+and configuration in a mode-`0700` directory under `/root`, stops the legacy
+service, and moves its init script out of `/etc/init.d` before APK writes the
+packaged one. If valid UCI credentials already exist, they are retained.
 
 For additional assurance, download and inspect
 [`scripts/install.sh`](scripts/install.sh) before running it. The initial HTTPS
@@ -98,10 +110,12 @@ The status panel reports:
 - procd process state;
 - tunnel connectivity using Newt's own health file;
 - Newt version, PID and uptime;
+- installed and available APK versions, with explicit check and install
+  controls that operate only on the two project packages;
 - the latest 50 `logread` lines;
 - Start, Stop and Restart controls.
 
-The upstream server version is intentionally not shown: Newt 1.15.0 does not
+The upstream server version is intentionally not shown: Newt 1.16.0 does not
 expose a stable local API for it, and parsing log messages would be brittle.
 
 Equivalent UCI setup:
@@ -142,9 +156,15 @@ uci show newt | sed 's/\.secret=.*/.secret=[redacted]/'
 test -e /var/run/newt/healthy && echo connected
 ```
 
-If a manually created `/etc/init.d/newt` exists, back it up before installing
-the package. APK will otherwise treat the path as package-owned. The package's
-`/usr/bin/newt` replaces the manual binary.
+The recommended `install.sh --migrate` path performs the backup and removes
+the legacy init-script collision before installing. APK otherwise protects the
+existing `/etc/init.d/newt` and writes the package copy as `newt.apk-new`.
+
+The legacy JSON is deliberately retained as rollback material, but the package
+launcher exports `CONFIG_FILE=/dev/null`, so it is never loaded. There is only
+one `/etc/init.d/newt` service name and one procd instance; the backed-up init
+script under `/root` is not executable during boot and cannot start a second
+Newt process.
 
 ## Updates
 
@@ -154,6 +174,11 @@ Upgrade only these packages:
 apk update
 apk upgrade pangolin-newt luci-app-pangolin-newt
 ```
+
+The same operation is available in LuCI under **Services → Newt → Package
+update**. **Check for updates** refreshes signed APK indexes. **Install update**
+upgrades only `pangolin-newt` and `luci-app-pangolin-newt`, after an explicit
+confirmation; it never runs an unqualified system-wide upgrade.
 
 Do not use an unqualified `apk upgrade` on OpenWrt. Firmware packages are a
 coherent set and should normally be updated with sysupgrade.
@@ -234,8 +259,8 @@ Enable GitHub Pages with **Source: GitHub Actions**, add the secret, then push a
 tag:
 
 ```sh
-git tag v1.15.0-r2
-git push origin v1.15.0-r2
+git tag v1.16.0-r1
+git push origin v1.16.0-r1
 ```
 
 The weekly upstream watcher opens an issue when a newer Newt release appears.
@@ -252,6 +277,8 @@ See [RELEASING.md](docs/RELEASING.md) for the complete release checklist.
 - LuCI RPC methods never return the secret; log output is additionally
   redacted before it reaches the browser.
 - Service actions use a strict allowlist.
+- Package actions use a strict allowlist and fixed package names; no browser
+  value is interpolated into an APK command.
 - UI status and logs are rendered as text nodes, not HTML.
 - Newt waits for a default route and is supervised by procd with respawn.
 
@@ -281,4 +308,4 @@ it is not legal advice.
 - [OpenWrt package build documentation](https://openwrt.org/docs/guide-developer/packages)
 - [OpenWrt 25.12 LuCI example application](https://github.com/openwrt/luci/tree/openwrt-25.12/applications/luci-app-example)
 - [OpenWrt APK index implementation](https://github.com/openwrt/openwrt/blob/openwrt-25.12/package/Makefile)
-- [Newt 1.15.0 source and license](https://github.com/fosrl/newt/tree/1.15.0)
+- [Newt 1.16.0 source and license](https://github.com/fosrl/newt/tree/1.16.0)

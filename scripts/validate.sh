@@ -24,8 +24,20 @@ if grep -q -- '--allow-untrusted' scripts/install.sh; then
 	echo 'The installer must never bypass APK signature verification.' >&2
 	exit 1
 fi
+grep -Fq "jsonfilter -e '@[*].name'" scripts/install.sh
+grep -Fq "grep -Fxq 'pangolin-newt'" scripts/install.sh
 
 node --check luci-app-pangolin-newt/htdocs/luci-static/resources/view/pangolin-newt/overview.js
+
+grep -q "const APK_BIN = '/usr/bin/apk';" \
+	luci-app-pangolin-newt/root/usr/share/rpcd/ucode/pangolin-newt.uc
+grep -q 'upgrade pangolin-newt luci-app-pangolin-newt' \
+	luci-app-pangolin-newt/root/usr/share/rpcd/ucode/pangolin-newt.uc
+if grep -Eq 'package_action.*request.*args.*command' \
+	luci-app-pangolin-newt/root/usr/share/rpcd/ucode/pangolin-newt.uc; then
+	echo 'Package RPC must not interpolate request arguments into commands.' >&2
+	exit 1
+fi
 
 for json_file in \
 	luci-app-pangolin-newt/root/usr/share/luci/menu.d/luci-app-pangolin-newt.json \
@@ -38,6 +50,11 @@ grep -q '$(INSTALL_CONF).*etc/config/newt' package/pangolin-newt/Makefile
 grep -q '^export CONFIG_FILE=/dev/null$' package/pangolin-newt/files/usr/libexec/newt-run
 grep -q '^exec /usr/bin/newt$' package/pangolin-newt/files/usr/libexec/newt-run
 grep -q 'NEWT_SYSTEM_SUBSTRATE=OPENWRT_PACKAGE' package/pangolin-newt/files/usr/libexec/newt-run
+
+if grep -Eq '^set -[^[:space:]]*u' package/pangolin-newt/files/usr/libexec/newt-run; then
+	echo 'newt-run must not enable nounset around OpenWrt shell helpers.' >&2
+	exit 1
+fi
 
 if grep -Eq 'procd_(set|append)_param (command|env).*secret' package/pangolin-newt/files/etc/init.d/newt; then
 	echo 'Secret must not be placed in the procd command or environment.' >&2

@@ -1,10 +1,13 @@
 #!/bin/sh
 # SPDX-License-Identifier: MIT
 
-set -eu
-umask 077
-
 . /lib/functions.sh
+
+# OpenWrt's shared shell helpers are not nounset-safe (they intentionally read
+# optional variables such as IPKG_INSTROOT). Keep errexit, and validate every
+# value consumed below explicitly.
+set -e
+umask 077
 
 config_load newt
 config_get endpoint main endpoint
@@ -54,4 +57,3 @@ export NEWT_SYSTEM_SUBSTRATE=OPENWRT_PACKAGE
 [ -z "$ping_timeout" ] || export PING_TIMEOUT="$ping_timeout"
 
 exec /usr/bin/newt
-

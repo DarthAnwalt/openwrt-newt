@@ -3,13 +3,13 @@
 		"description": "Grant access to the Newt configuration and status",
 		"read": {
 			"ubus": {
-				"luci.pangolin-newt": [ "get_status", "get_log" ]
+				"luci.pangolin-newt": [ "get_status", "get_log", "get_package_status" ]
 			},
 			"uci": [ "newt" ]
 		},
 		"write": {
 			"ubus": {
-				"luci.pangolin-newt": [ "service_action" ]
+				"luci.pangolin-newt": [ "service_action", "package_action" ]
 			},
 			"uci": [ "newt" ]
 		}
