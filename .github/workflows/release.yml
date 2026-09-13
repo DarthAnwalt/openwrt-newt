@@ -38,7 +38,9 @@ jobs:
             HEAD
           (
             cd "$output"
-            sha256sum ./*.tar.gz >SHA256SUMS
+            # Release assets share one flat namespace on GitHub. Keep this
+            # distinct from the APK repository's SHA256SUMS file.
+            sha256sum ./*.tar.gz >SOURCE-SHA256SUMS
           )
       - name: Upload corresponding source
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

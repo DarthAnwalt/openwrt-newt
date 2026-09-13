@@ -39,6 +39,8 @@ fi
 source versions.env
 grep -q "^PKG_VERSION:=$NEWT_VERSION$" package/pangolin-newt/Makefile
 grep -q "^PKG_RELEASE:=$NEWT_RELEASE$" package/pangolin-newt/Makefile
+grep -q "^PKG_VERSION:=$NEWT_VERSION$" luci-app-pangolin-newt/Makefile
+grep -q "^PKG_RELEASE:=$NEWT_RELEASE$" luci-app-pangolin-newt/Makefile
 grep -q "^PKG_HASH:=$NEWT_SOURCE_SHA256$" package/pangolin-newt/Makefile
 
 echo 'Static validation passed.'

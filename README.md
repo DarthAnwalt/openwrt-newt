@@ -9,8 +9,9 @@ the Pangolin tunnel client:
 - a signed APK v3 repository published by GitHub Actions and GitHub Pages.
 
 The initial target is OpenWrt 25.12.5 on `mediatek/filogic`
-(`aarch64_cortex-a53`), including the GL.iNet Brume 2. The CI matrix is ready
-for additional SDK targets.
+(`aarch64_cortex-a53`). The same build supports both the GL.iNet Brume 2 and
+Huasifei WH3000 Pro; no device-specific package is required. The CI matrix is
+ready for additional SDK targets.
 
 ## Current versions
 
@@ -18,7 +19,7 @@ for additional SDK targets.
 |---|---|
 | OpenWrt SDK | 25.12.5, mediatek/filogic |
 | Package architecture | aarch64_cortex-a53 |
-| Newt | 1.15.0-r1 |
+| Newt | 1.15.0-r2 |
 | Package manager | OpenWrt APK v3 |
 
 Exact SDK, feed commits and checksums are recorded in
@@ -27,6 +28,16 @@ using the OpenWrt Go toolchain. OpenWrt 25.12.5's pinned packages feed provides
 Go 1.26; Newt 1.15.0 requires Go 1.25.
 
 ## Install from the signed repository
+
+Confirm the router reports the supported package architecture first:
+
+```sh
+apk --print-arch
+```
+
+The expected result for both Brume 2 and WH3000 Pro is
+`aarch64_cortex-a53`. If an OEM hardware revision reports anything else, do
+not use this repository until that architecture has its own CI build.
 
 1. Import the repository public key:
 
@@ -200,8 +211,8 @@ Enable GitHub Pages with **Source: GitHub Actions**, add the secret, then push a
 tag:
 
 ```sh
-git tag v1.15.0-r1
-git push origin v1.15.0-r1
+git tag v1.15.0-r2
+git push origin v1.15.0-r2
 ```
 
 The weekly upstream watcher opens an issue when a newer Newt release appears.
