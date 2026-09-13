@@ -17,6 +17,14 @@ for script in scripts/*.sh; do
 	bash -n "$script"
 done
 
+sh -n scripts/install.sh
+grep -q "^PUBLIC_KEY_SHA256='[0-9a-f]\\{64\\}'$" scripts/install.sh
+grep -q "^SUPPORTED_ARCH='aarch64_cortex-a53'$" scripts/install.sh
+if grep -q -- '--allow-untrusted' scripts/install.sh; then
+	echo 'The installer must never bypass APK signature verification.' >&2
+	exit 1
+fi
+
 node --check luci-app-pangolin-newt/htdocs/luci-static/resources/view/pangolin-newt/overview.js
 
 for json_file in \

@@ -26,6 +26,7 @@ jobs:
           source versions.env
           output="site/repository/source"
           mkdir -p "$output"
+          install -m 0755 scripts/install.sh site/install.sh
           upstream="$output/newt-${NEWT_VERSION}-upstream.tar.gz"
           curl --fail --location --retry 3 \
             --output "$upstream" \
@@ -132,7 +133,10 @@ jobs:
           <meta charset="utf-8">
           <title>openwrt-newt APK repository</title>
           <h1>openwrt-newt APK repository</h1>
-          <p>See the project README for key import and installation instructions.</p>
+          <p>Install on supported OpenWrt 25.12 devices:</p>
+          <pre>uclient-fetch -qO /tmp/install-openwrt-newt.sh https://DarthAnwalt.github.io/openwrt-newt/install.sh &amp;&amp; sh /tmp/install-openwrt-newt.sh</pre>
+          <p>The installer verifies the repository public key before adding the signed APK feed.</p>
+          <p>See the <a href="https://github.com/DarthAnwalt/openwrt-newt">project README</a> for manual installation and configuration.</p>
           EOF
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

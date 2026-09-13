@@ -27,7 +27,27 @@ Exact SDK, feed commits and checksums are recorded in
 using the OpenWrt Go toolchain. OpenWrt 25.12.5's pinned packages feed provides
 Go 1.26; Newt 1.15.0 requires Go 1.25.
 
-## Install from the signed repository
+## One-line install
+
+On a supported OpenWrt router, run as `root`:
+
+```sh
+uclient-fetch -qO /tmp/install-openwrt-newt.sh https://DarthAnwalt.github.io/openwrt-newt/install.sh && sh /tmp/install-openwrt-newt.sh
+```
+
+The installer checks OpenWrt 25.12 and `aarch64_cortex-a53`, downloads the
+repository public key, verifies its pinned SHA-256 fingerprint, adds the feed
+only if it is absent, and installs both packages without
+`--allow-untrusted`. It is safe to run again when updating or repairing the
+installation. It never asks for or handles the Newt ID or secret.
+
+For additional assurance, download and inspect
+[`scripts/install.sh`](scripts/install.sh) before running it. The initial HTTPS
+download of the installer remains a trust-on-first-use step; the embedded key
+fingerprint protects against an accidental or substituted repository key after
+the script itself has been obtained.
+
+## Manual install from the signed repository
 
 Confirm the router reports the supported package architecture first:
 
