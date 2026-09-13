@@ -44,7 +44,8 @@ case "$release" in
 	*) fail "OpenWrt $OPENWRT_SERIES.x is required; this device reports $release" ;;
 esac
 
-arch="$(apk --print-arch)"
+[ -r /etc/apk/arch ] || fail '/etc/apk/arch was not found'
+arch="$(sed -n '1p' /etc/apk/arch)"
 [ "$arch" = "$SUPPORTED_ARCH" ] || \
 	fail "unsupported package architecture $arch (expected $SUPPORTED_ARCH)"
 

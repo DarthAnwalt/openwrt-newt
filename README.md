@@ -35,7 +35,8 @@ On a supported OpenWrt router, run as `root`:
 uclient-fetch -qO /tmp/install-openwrt-newt.sh https://DarthAnwalt.github.io/openwrt-newt/install.sh && sh /tmp/install-openwrt-newt.sh
 ```
 
-The installer checks OpenWrt 25.12 and `aarch64_cortex-a53`, downloads the
+The installer checks OpenWrt 25.12 and `/etc/apk/arch` for
+`aarch64_cortex-a53`, downloads the
 repository public key, verifies its pinned SHA-256 fingerprint, adds the feed
 only if it is absent, and installs both packages without
 `--allow-untrusted`. It is safe to run again when updating or repairing the
@@ -49,15 +50,17 @@ the script itself has been obtained.
 
 ## Manual install from the signed repository
 
-Confirm the router reports the supported package architecture first:
+Confirm the router reports the supported package feed architecture first:
 
 ```sh
-apk --print-arch
+cat /etc/apk/arch
 ```
 
 The expected result for both Brume 2 and WH3000 Pro is
 `aarch64_cortex-a53`. If an OEM hardware revision reports anything else, do
 not use this repository until that architecture has its own CI build.
+Do not use `apk --print-arch` for this check: on OpenWrt 25.12.5 it can report
+the more generic architecture of the `apk-tools` executable (`aarch64`).
 
 1. Import the repository public key:
 
