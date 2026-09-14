@@ -32,6 +32,14 @@ The ZeroTier update worker has separate fixed actions for `zerotier` and
 `luci-app-zt`. This permits the official daemon and our GUI to follow their own
 package versions and repositories while sharing one signed index refresh.
 
+OpenWrt 25.12 records a package's `CONFLICTS` in its intermediate metadata but
+does not pass that field to `apk mkpkg`. The pinned build therefore applies the
+small audited patch in `patches/openwrt-25.12-apk-conflicts.patch`, translating
+each conflict to APK v3's negated dependency form. The APK smoke test verifies
+that `!luci-app-zerotier` is present in the finished package. Remove this patch
+only after the pinned OpenWrt SDK emits conflicts itself and the smoke test has
+confirmed the replacement behavior.
+
 ## Source build decision
 
 Newt 1.16.0 declares Go 1.25.0. The packages feed commit shipped with OpenWrt

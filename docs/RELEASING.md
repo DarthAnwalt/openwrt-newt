@@ -38,6 +38,9 @@ replace `PKG_VERSION` and normally reset `PKG_RELEASE` to 1.
 3. Run static validation and the full pinned-SDK build.
 4. Confirm the APK declares `zerotier` as a dependency and
    `luci-app-zerotier` as a conflict.
+   The build currently applies `patches/openwrt-25.12-apk-conflicts.patch`
+   because the 25.12 SDK drops `CONFLICTS` when invoking `apk mkpkg`; review
+   whether the pinned SDK still needs this workaround whenever it is bumped.
 5. On a router with an existing identity, install the package and verify the
    identity secret is unchanged and absent from all RPC responses.
 6. Test configuration save/apply, multiple network sections, service controls,
