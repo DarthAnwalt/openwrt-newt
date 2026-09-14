@@ -20,7 +20,7 @@ define Package/luci-app-zt
   # OpenWrt 25.12 records CONFLICTS in package metadata but its APK mkpkg
   # rule does not emit that field. APK v3 represents conflicts as a negated
   # runtime dependency, so keep both forms until the SDK rule is fixed.
-  EXTRA_DEPENDS:=!luci-app-zerotier
+  EXTRA_DEPENDS:=!luci-app-zerotier (>=0)
   PKGARCH:=all
 endef
 
