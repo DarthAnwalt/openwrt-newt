@@ -1,11 +1,5 @@
 --- a/include/package-pack.mk
 +++ b/include/package-pack.mk
-@@ -580,7 +580,7 @@ $(_define) Package/$(1)/CONTROL
- 	  $$(if $$(Package/$(1)/PROVIDES),--info "provides:$$(Package/$(1)/PROVIDES)") \
- 	  $$(if $$(Package/$(1)/PRIORITY),--info "provider-priority:$$(Package/$(1)/PRIORITY)") \
- 	  $$(APK_SCRIPTS_$(1)) \
+@@ -583,1 +583,1 @@ $(_define) Package/$(1)/CONTROL
 -	  --info "depends:$$(foreach depends,$$(subst $$(comma),$$(space),$$(subst $$(space),,$$(subst $$(paren_right),,$$(subst $$(paren_left),,$$(Package/$(1)/DEPENDS))))),$$(depends))" \
 +	  --info "depends:$$(foreach conflict,$$(call mergelist,$$(CONFLICTS)),!$$(conflict)) $$(foreach depends,$$(subst $$(comma),$$(space),$$(subst $$(space),,$$(subst $$(paren_right),,$$(subst $$(paren_left),,$$(Package/$(1)/DEPENDS))))),$$(depends))" \
- 	  --files "$$(IDIR_$(1))" \
- 	  --output "$$(PACK_$(1))"
- endif
