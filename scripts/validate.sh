@@ -59,6 +59,8 @@ grep -Fq '/usr/bin/apk upgrade zerotier' \
 	luci-app-zt/root/usr/libexec/luci-app-zt-update
 grep -Fq '/usr/bin/apk upgrade luci-app-zt' \
 	luci-app-zt/root/usr/libexec/luci-app-zt-update
+grep -Fq '[ -s "$ACTION_FILE" ] || return 0' \
+	luci-app-zt/root/etc/init.d/luci-app-zt-update
 if grep -Eq '\$\{APK_BIN\} (update|upgrade)' \
 	luci-app-zt/root/usr/share/rpcd/ucode/luci-app-zt.uc; then
 	echo 'ZeroTier networked APK commands must run through the dedicated procd service.' >&2
