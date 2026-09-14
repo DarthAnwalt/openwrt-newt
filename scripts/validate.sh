@@ -110,7 +110,7 @@ grep -q "^PKG_HASH:=$NEWT_SOURCE_SHA256$" package/pangolin-newt/Makefile
 grep -q "^PKG_VERSION:=$LUCI_ZT_VERSION$" luci-app-zt/Makefile
 grep -q "^PKG_RELEASE:=$LUCI_ZT_RELEASE$" luci-app-zt/Makefile
 grep -q '^  CONFLICTS:=luci-app-zerotier$' luci-app-zt/Makefile
-grep -q '^  EXTRA_DEPENDS:=!luci-app-zerotier (>=0)$' luci-app-zt/Makefile
+grep -Fq '!$$(conflict)' patches/openwrt-25.12-apk-conflicts.patch
 
 if grep -q '"uci"' luci-app-zt/root/usr/share/rpcd/acl.d/luci-app-zt.json; then
 	echo 'luci-app-zt must use its sanitizing RPC instead of exposing the ZeroTier UCI secret.' >&2

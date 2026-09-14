@@ -25,6 +25,12 @@ tar --zstd -xf "$sdk_archive" -C "$sdk_parent"
 sdk_dir="$(find "$sdk_parent" -mindepth 1 -maxdepth 1 -type d -name 'openwrt-sdk-*' -print -quit)"
 [[ -n "$sdk_dir" ]]
 
+# OpenWrt 25.12 records Package/*/CONFLICTS in its intermediate metadata but
+# omits it from `apk mkpkg`. APK v3 represents conflicts as negated runtime
+# dependencies. Apply a small, auditable SDK patch until OpenWrt emits them.
+patch --batch --forward --strip=1 --directory "$sdk_dir" \
+	--input "$repo_root/patches/openwrt-25.12-apk-conflicts.patch"
+
 (
 	cd "$sdk_dir"
 	# Keep the SDK's checksum-pinned feeds.conf.default. In particular, its
