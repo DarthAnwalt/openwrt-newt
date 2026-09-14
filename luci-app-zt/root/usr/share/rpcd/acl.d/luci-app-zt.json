@@ -1,0 +1,15 @@
+{
+	"luci-app-zt": {
+		"description": "Grant access to ZeroTier configuration and status",
+		"read": {
+			"ubus": {
+				"luci.zt": [ "get_config", "get_status", "get_networks", "get_log", "get_package_status" ]
+			}
+		},
+		"write": {
+			"ubus": {
+				"luci.zt": [ "set_config", "service_action", "package_action" ]
+		}
+	}
+}
+}

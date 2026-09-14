@@ -1,0 +1,13 @@
+{
+	"admin/services/zt": {
+		"title": "ZeroTier",
+		"order": 66,
+		"action": {
+			"type": "view",
+			"path": "zt/overview"
+		},
+		"depends": {
+			"acl": [ "luci-app-zt" ]
+		}
+	}
+}

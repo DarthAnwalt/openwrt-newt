@@ -1,11 +1,13 @@
 # openwrt-newt
 
 Native OpenWrt packages for [Fossorial Newt](https://github.com/fosrl/newt),
-the Pangolin tunnel client:
+the Pangolin tunnel client, plus a ZeroTier management application:
 
 - `pangolin-newt`: a source-built Newt binary, UCI configuration, procd service and
   migration helper;
 - `luci-app-pangolin-newt`: a modern JavaScript LuCI page under **Services → Newt**;
+- `luci-app-zt`: an independent modern JavaScript LuCI page for the official
+  OpenWrt `zerotier` package under **Services → ZeroTier**;
 - a signed APK v3 repository published by GitHub Actions and GitHub Pages.
 
 The initial target is OpenWrt 25.12.5 on `mediatek/filogic`
@@ -20,6 +22,8 @@ ready for additional SDK targets.
 | OpenWrt SDK | 25.12.5, mediatek/filogic |
 | Package architecture | aarch64_cortex-a53 |
 | Newt | 1.16.0-r2 |
+| luci-app-zt | 0.1.0-r1 |
+| Official OpenWrt ZeroTier on 25.12.5 | 1.16.0-r1 |
 | Package manager | OpenWrt APK v3 |
 
 Exact SDK, feed commits and checksums are recorded in
@@ -242,8 +246,8 @@ The supported build host is x86_64 Linux:
 ```
 
 The build script downloads the exact 25.12.5 SDK, verifies its SHA256, pins the
-packages and LuCI feed commits, builds both APKs and checks their metadata and
-contents with the SDK's APK tool.
+packages and LuCI feed commits, builds all three APKs and checks their metadata
+and contents with the SDK's APK tool.
 
 macOS can run static validation, but the official SDK archive contains Linux
 x86_64 host tools. Use a Linux VM or GitHub Actions for the full build.
@@ -269,12 +273,42 @@ tag:
 ```sh
 git tag v1.16.0-r2
 git push origin v1.16.0-r2
+
+# An independent luci-app-zt release uses its own versioned tag:
+git tag luci-app-zt-v0.1.0-r1
+git push origin luci-app-zt-v0.1.0-r1
 ```
 
 The weekly upstream watcher opens an issue when a newer Newt release appears.
 It never bumps or publishes packages automatically.
 
 See [RELEASING.md](docs/RELEASING.md) for the complete release checklist.
+
+## ZeroTier LuCI application
+
+If this signed repository is already configured, install the GUI without
+replacing the official ZeroTier daemon:
+
+```sh
+apk update
+apk add luci-app-zt
+```
+
+The deliberately distinct `luci-app-zt` name avoids claiming the likely
+canonical name of a future official package. It conflicts with the existing
+third-party name `luci-app-zerotier`, since running two interfaces against the
+same configuration would be ambiguous.
+
+The page manages the current OpenWrt 25.12 UCI schema, displays JSON runtime
+status and joined networks, provides service controls, and independently checks
+and installs updates for:
+
+- `zerotier`, from the configured official OpenWrt feed;
+- `luci-app-zt`, from this signed repository.
+
+The identity secret is never returned to the browser. The GUI uses a sanitizing
+RPC instead of direct browser access to `/etc/config/zerotier`; saving settings
+preserves the existing secret. See [the detailed design and usage guide](docs/LUCI-ZT.md).
 
 ## Security design
 
@@ -289,6 +323,8 @@ See [RELEASING.md](docs/RELEASING.md) for the complete release checklist.
   value is interpolated into an APK command.
 - LuCI only queues package actions; a dedicated procd worker performs network
   access so it does not inherit rpcd's sandbox restrictions.
+- `luci-app-zt` does not grant direct UCI read access to the browser, keeping
+  the ZeroTier identity secret server-side.
 - UI status and logs are rendered as text nodes, not HTML.
 - Newt waits for a default route and is supervised by procd with respawn.
 
@@ -318,4 +354,6 @@ it is not legal advice.
 - [OpenWrt package build documentation](https://openwrt.org/docs/guide-developer/packages)
 - [OpenWrt 25.12 LuCI example application](https://github.com/openwrt/luci/tree/openwrt-25.12/applications/luci-app-example)
 - [OpenWrt APK index implementation](https://github.com/openwrt/openwrt/blob/openwrt-25.12/package/Makefile)
+- [OpenWrt 25.12 ZeroTier package](https://github.com/openwrt/packages/tree/openwrt-25.12/net/zerotier)
+- [OpenWrt ZeroTier guide](https://openwrt.org/docs/guide-user/services/vpn/zerotier)
 - [Newt 1.16.0 source and license](https://github.com/fosrl/newt/tree/1.16.0)

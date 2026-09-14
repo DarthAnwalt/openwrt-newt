@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+      - "luci-app-zt-v*"
   workflow_dispatch:
 
 permissions:
@@ -74,11 +75,15 @@ jobs:
         if: github.ref_type == 'tag'
         run: |
           source versions.env
-          expected="v${NEWT_VERSION}-r${NEWT_RELEASE}"
-          test "$GITHUB_REF_NAME" = "$expected" || {
-            echo "Release tag must be $expected, got $GITHUB_REF_NAME." >&2
-            exit 1
-          }
+          expected_newt="v${NEWT_VERSION}-r${NEWT_RELEASE}"
+          expected_luci_zt="luci-app-zt-v${LUCI_ZT_VERSION}-r${LUCI_ZT_RELEASE}"
+          case "$GITHUB_REF_NAME" in
+            "$expected_newt"|"$expected_luci_zt") ;;
+            *)
+              echo "Release tag must be $expected_newt or $expected_luci_zt, got $GITHUB_REF_NAME." >&2
+              exit 1
+              ;;
+          esac
       - name: Require signing key
         env:
           APK_SIGNING_KEY_B64: ${{ secrets.APK_SIGNING_KEY_B64 }}
@@ -131,10 +136,12 @@ jobs:
           cat >site/index.html <<'EOF'
           <!doctype html>
           <meta charset="utf-8">
-          <title>openwrt-newt APK repository</title>
-          <h1>openwrt-newt APK repository</h1>
-          <p>Install on supported OpenWrt 25.12 devices:</p>
+          <title>DarthAnwalt OpenWrt APK repository</title>
+          <h1>DarthAnwalt OpenWrt APK repository</h1>
+          <p>Install Newt on supported OpenWrt 25.12 devices:</p>
           <pre>uclient-fetch -qO /tmp/install-openwrt-newt.sh https://DarthAnwalt.github.io/openwrt-newt/install.sh &amp;&amp; sh /tmp/install-openwrt-newt.sh</pre>
+          <p>After adding this signed repository, install the ZeroTier GUI with:</p>
+          <pre>apk update &amp;&amp; apk add luci-app-zt</pre>
           <p>The installer verifies the repository public key before adding the signed APK feed.</p>
           <p>See the <a href="https://github.com/DarthAnwalt/openwrt-newt">project README</a> for manual installation and configuration.</p>
           EOF
@@ -180,4 +187,4 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --verify-tag \
             --title "$GITHUB_REF_NAME" \
-            --notes "Signed OpenWrt 25.12 APK repository and packages. See the README for installation instructions."
+            --notes "Signed OpenWrt 25.12 APK repository and packages. Newt and luci-app-zt retain independent package versions; see the README for installation instructions."
