@@ -76,5 +76,6 @@ grep -Fq 'boot()' "$extract_root/luci-zt/etc/init.d/luci-app-zt-update"
 test -x "$extract_root/luci-zt/etc/init.d/luci-app-zt-update"
 test -x "$extract_root/luci-zt/usr/libexec/luci-app-zt-update"
 grep -Fq 'luci-app-zerotier' "$extract_root/luci-zt-metadata.json"
+grep -Fq '!luci-app-zerotier' "$extract_root/luci-zt-metadata.json"
 
 echo 'APK metadata and package contents look correct.'

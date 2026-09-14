@@ -17,6 +17,10 @@ define Package/luci-app-zt
   TITLE:=LuCI support for the official OpenWrt ZeroTier package
   DEPENDS:=+luci-base +zerotier
   CONFLICTS:=luci-app-zerotier
+  # OpenWrt 25.12 records CONFLICTS in package metadata but its APK mkpkg
+  # rule does not emit that field. APK v3 represents conflicts as a negated
+  # runtime dependency, so keep both forms until the SDK rule is fixed.
+  EXTRA_DEPENDS:=!luci-app-zerotier
   PKGARCH:=all
 endef
 
