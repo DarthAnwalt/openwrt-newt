@@ -42,6 +42,7 @@ endef
 define Build/Compile
 	$(INSTALL_DIR) $(PKG_BUILD_DIR)/bin
 	+$(GO_PKG_VARS) $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR) \
+		GOFLAGS="-trimpath -buildvcs=false" \
 		VERSION="$(PKG_VERSION)" \
 		local
 endef

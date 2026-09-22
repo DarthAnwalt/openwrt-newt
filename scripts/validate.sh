@@ -95,6 +95,8 @@ grep -Fq 'export LOCAL_ENDPOINT_INTERFACES="$local_endpoint_interfaces"' \
 grep -q '^exec /usr/bin/newt$' package/pangolin-newt/files/usr/libexec/newt-run
 grep -q 'NEWT_SYSTEM_SUBSTRATE=OPENWRT_PACKAGE' package/pangolin-newt/files/usr/libexec/newt-run
 grep -Fq '/usr/libexec/newt-run' package/pangolin-newt/Makefile
+grep -Fq 'GOFLAGS="-trimpath -buildvcs=false"' package/pangolin-newt/Makefile
+grep -q '^umask 022$' scripts/build.sh
 grep -Fq 'newt.apk-new' package/pangolin-newt/Makefile
 
 if grep -Eq '^set -[^[:space:]]*u' package/pangolin-newt/files/usr/libexec/newt-run; then
