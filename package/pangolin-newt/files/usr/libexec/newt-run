@@ -19,6 +19,7 @@ config_get dns main dns
 config_get mtu main mtu
 config_get ping_interval main ping_interval
 config_get ping_timeout main ping_timeout
+config_get local_endpoint_interfaces main local_endpoint_interfaces
 
 if [ -z "$endpoint" ] || [ -z "$id" ] || [ -z "$secret" ]; then
 	logger -t newt -p daemon.err 'configuration incomplete: endpoint, id and secret are required'
@@ -55,5 +56,6 @@ export NEWT_SYSTEM_SUBSTRATE=OPENWRT_PACKAGE
 [ -z "$mtu" ] || export MTU="$mtu"
 [ -z "$ping_interval" ] || export PING_INTERVAL="$ping_interval"
 [ -z "$ping_timeout" ] || export PING_TIMEOUT="$ping_timeout"
+[ -z "$local_endpoint_interfaces" ] || export LOCAL_ENDPOINT_INTERFACES="$local_endpoint_interfaces"
 
 exec /usr/bin/newt

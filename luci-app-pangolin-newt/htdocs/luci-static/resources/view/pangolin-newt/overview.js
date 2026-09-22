@@ -211,6 +211,16 @@ return view.extend({
 		o.default = 'INFO';
 		o.rmempty = false;
 
+		o = s.option(form.Value, 'local_endpoint_interfaces', _('Local endpoint interfaces'),
+			_('Optional comma-separated allowlist of interface names whose addresses Newt may advertise as local endpoints. Leave empty to use all suitable interfaces.'));
+		o.placeholder = 'br-lan,wwan';
+		o.rmempty = true;
+		o.validate = function(sectionId, value) {
+			if (value && !/^[A-Za-z0-9_.:-]+(?:\s*,\s*[A-Za-z0-9_.:-]+)*$/.test(value))
+				return _('Enter interface names separated by commas, for example br-lan,wwan.');
+			return true;
+		};
+
 		let status = data[0] || {};
 		let logData = data[1] || {};
 		let packageStatus = data[2] || {};

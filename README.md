@@ -21,7 +21,7 @@ ready for additional SDK targets.
 |---|---|
 | OpenWrt SDK | 25.12.5, mediatek/filogic |
 | Package architecture | aarch64_cortex-a53 |
-| Newt | 1.16.0-r2 |
+| Newt | 1.17.0-r1 |
 | luci-app-zt | 0.1.0-r1 |
 | Official OpenWrt ZeroTier on 25.12.5 | 1.16.0-r1 |
 | Package manager | OpenWrt APK v3 |
@@ -29,7 +29,12 @@ ready for additional SDK targets.
 Exact SDK, feed commits and checksums are recorded in
 [`versions.env`](versions.env). Newt is built from the exact upstream tag
 using the OpenWrt Go toolchain. OpenWrt 25.12.5's pinned packages feed provides
-Go 1.26; Newt 1.16.0 requires Go 1.25.
+Go 1.26, matching Newt 1.17.0's Go 1.26 requirement.
+
+Upstream now describes Newt as being phased out in favour of the Pangolin CLI.
+This repository continues to package the supported Newt 1.17 release for
+OpenWrt while tracking that migration path; it does not silently replace an
+existing Newt installation with a different client.
 
 ## One-line install
 
@@ -109,6 +114,9 @@ same GitHub release through a second trusted channel.
 
 In LuCI, open **Services → Newt**, enable the service, enter the Pangolin
 endpoint, Newt ID and secret, select a log level, then choose **Save & Apply**.
+Newt 1.17 also supports an optional comma-separated **Local endpoint
+interfaces** allowlist, useful on routers where only selected LAN/WWAN
+addresses should be advertised to Pangolin.
 The status panel reports:
 
 - procd process state;
@@ -119,7 +127,7 @@ The status panel reports:
 - the latest 50 `logread` lines;
 - Start, Stop and Restart controls.
 
-The upstream server version is intentionally not shown: Newt 1.16.0 does not
+The upstream server version is intentionally not shown: Newt 1.17.0 does not
 expose a stable local API for it, and parsing log messages would be brittle.
 
 Equivalent UCI setup:
@@ -137,8 +145,9 @@ chmod 0600 /etc/config/newt
 ```
 
 Optional launcher settings already supported for future UI expansion are
-`dns`, `mtu`, `ping_interval`, `ping_timeout` and
-`wait_for_network`.
+`dns`, `mtu`, `ping_interval`, `ping_timeout` and `wait_for_network`.
+The Newt 1.17 `local_endpoint_interfaces` setting is exposed in LuCI and maps
+to upstream's `LOCAL_ENDPOINT_INTERFACES` environment variable.
 
 ## Migrate a manual installation
 
@@ -271,8 +280,8 @@ Enable GitHub Pages with **Source: GitHub Actions**, add the secret, then push a
 tag:
 
 ```sh
-git tag v1.16.0-r2
-git push origin v1.16.0-r2
+git tag v1.17.0-r1
+git push origin v1.17.0-r1
 
 # An independent luci-app-zt release uses its own versioned tag:
 git tag luci-app-zt-v0.1.0-r1
@@ -356,4 +365,4 @@ it is not legal advice.
 - [OpenWrt APK index implementation](https://github.com/openwrt/openwrt/blob/openwrt-25.12/package/Makefile)
 - [OpenWrt 25.12 ZeroTier package](https://github.com/openwrt/packages/tree/openwrt-25.12/net/zerotier)
 - [OpenWrt ZeroTier guide](https://openwrt.org/docs/guide-user/services/vpn/zerotier)
-- [Newt 1.16.0 source and license](https://github.com/fosrl/newt/tree/1.16.0)
+- [Newt 1.17.0 source and license](https://github.com/fosrl/newt/tree/1.17.0)
