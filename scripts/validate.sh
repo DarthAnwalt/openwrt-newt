@@ -38,6 +38,8 @@ grep -q "const APK_BIN = '/usr/bin/apk';" \
 	luci-app-pangolin-newt/root/usr/share/rpcd/ucode/pangolin-newt.uc
 grep -Fq "init_action(UPDATE_SERVICE, 'start')" \
 	luci-app-pangolin-newt/root/usr/share/rpcd/ucode/pangolin-newt.uc
+grep -Fq '[ -s "$ACTION_FILE" ] || return 0' \
+	luci-app-pangolin-newt/root/etc/init.d/pangolin-newt-update
 grep -Fq '/usr/bin/apk upgrade pangolin-newt luci-app-pangolin-newt' \
 	luci-app-pangolin-newt/root/usr/libexec/pangolin-newt-update
 if grep -Eq '\$\{APK_BIN\} (update|upgrade)' \
@@ -88,9 +90,15 @@ done
 grep -q '^/etc/config/newt$' package/pangolin-newt/Makefile
 grep -q '$(INSTALL_CONF).*etc/config/newt' package/pangolin-newt/Makefile
 grep -q '^export CONFIG_FILE=/dev/null$' package/pangolin-newt/files/usr/libexec/newt-run
+grep -Fq 'export LOCAL_ENDPOINT_INTERFACES="$local_endpoint_interfaces"' \
+	package/pangolin-newt/files/usr/libexec/newt-run
 grep -q '^exec /usr/bin/newt$' package/pangolin-newt/files/usr/libexec/newt-run
 grep -q 'NEWT_SYSTEM_SUBSTRATE=OPENWRT_PACKAGE' package/pangolin-newt/files/usr/libexec/newt-run
 grep -Fq '/usr/libexec/newt-run' package/pangolin-newt/Makefile
+grep -Fq 'GOFLAGS="-trimpath -buildvcs=false"' package/pangolin-newt/Makefile
+grep -Fq 'override PKG_SOURCE_DATE_EPOCH:=$(SOURCE_DATE_EPOCH)' \
+	luci-app-pangolin-newt/Makefile
+grep -q '^umask 022$' scripts/build.sh
 grep -Fq 'newt.apk-new' package/pangolin-newt/Makefile
 
 if grep -Eq '^set -[^[:space:]]*u' package/pangolin-newt/files/usr/libexec/newt-run; then

@@ -3,12 +3,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=pangolin-newt
-PKG_VERSION:=1.16.0
-PKG_RELEASE:=2
+PKG_VERSION:=1.17.0
+PKG_RELEASE:=1
 
 PKG_SOURCE:=newt-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/fosrl/newt/tar.gz/refs/tags/$(PKG_VERSION)?
-PKG_HASH:=8d05112eeb1bd80457ab458a733c9b375226c70d97475e5300e151f931244601
+PKG_HASH:=968fdbbdb784b84dde16479740b8e6f9d6da4173f0343f47b765632a5f3e391e
 PKG_BUILD_DIR:=$(BUILD_DIR)/newt-$(PKG_VERSION)
 
 PKG_MAINTAINER:=openwrt-newt contributors
@@ -42,6 +42,7 @@ endef
 define Build/Compile
 	$(INSTALL_DIR) $(PKG_BUILD_DIR)/bin
 	+$(GO_PKG_VARS) $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR) \
+		GOFLAGS="-trimpath -buildvcs=false" \
 		VERSION="$(PKG_VERSION)" \
 		local
 endef

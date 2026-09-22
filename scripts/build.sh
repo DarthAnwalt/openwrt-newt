@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 set -euo pipefail
+umask 022
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 source "$repo_root/versions.env"

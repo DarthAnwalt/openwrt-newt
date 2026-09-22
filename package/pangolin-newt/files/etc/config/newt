@@ -11,4 +11,5 @@ config newt 'main'
 	# option mtu '1280'
 	# option ping_interval '15s'
 	# option ping_timeout '7s'
-
+	# Restrict advertised local endpoints to these interface names.
+	# option local_endpoint_interfaces 'br-lan,wwan'

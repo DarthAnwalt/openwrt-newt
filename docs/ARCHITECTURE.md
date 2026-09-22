@@ -42,7 +42,7 @@ confirmed the replacement behavior.
 
 ## Source build decision
 
-Newt 1.16.0 declares Go 1.25.0. The packages feed commit shipped with OpenWrt
+Newt 1.17.0 declares Go 1.26.0. The packages feed commit shipped with OpenWrt
 25.12.5 provides Go 1.26 and knows the Cortex-A53 `GOARM64=v8.0` baseline.
 The upstream build already sets `CGO_ENABLED=0`, so the result is portable
 across musl targets of the same architecture.
