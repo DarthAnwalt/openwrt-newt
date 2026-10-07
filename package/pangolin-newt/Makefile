@@ -3,12 +3,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=pangolin-newt
-PKG_VERSION:=1.17.0
+PKG_VERSION:=1.18.1
 PKG_RELEASE:=1
 
 PKG_SOURCE:=newt-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/fosrl/newt/tar.gz/refs/tags/$(PKG_VERSION)?
-PKG_HASH:=968fdbbdb784b84dde16479740b8e6f9d6da4173f0343f47b765632a5f3e391e
+PKG_HASH:=e3e66632a3ca2eeb950cb74e087ca837e7eee98a9e0816fcc1e4528a355ccd18
 PKG_BUILD_DIR:=$(BUILD_DIR)/newt-$(PKG_VERSION)
 
 PKG_MAINTAINER:=openwrt-newt contributors

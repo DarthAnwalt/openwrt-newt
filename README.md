@@ -21,7 +21,7 @@ ready for additional SDK targets.
 |---|---|
 | OpenWrt SDK | 25.12.5, mediatek/filogic |
 | Package architecture | aarch64_cortex-a53 |
-| Newt | 1.17.0-r1 |
+| Newt | 1.18.1-r1 |
 | luci-app-zt | 0.1.0-r1 |
 | Official OpenWrt ZeroTier on 25.12.5 | 1.16.0-r1 |
 | Package manager | OpenWrt APK v3 |
@@ -29,12 +29,18 @@ ready for additional SDK targets.
 Exact SDK, feed commits and checksums are recorded in
 [`versions.env`](versions.env). Newt is built from the exact upstream tag
 using the OpenWrt Go toolchain. OpenWrt 25.12.5's pinned packages feed provides
-Go 1.26, matching Newt 1.17.0's Go 1.26 requirement.
+Go 1.26, matching Newt 1.18.1's Go 1.26 requirement.
 
 Upstream now describes Newt as being phased out in favour of the Pangolin CLI.
-This repository continues to package the supported Newt 1.17 release for
+This repository continues to package the Newt 1.18 release for
 OpenWrt while tracking that migration path; it does not silently replace an
 existing Newt installation with a different client.
+
+Newt 1.18 adds exit-node support and 1.18.1 maintains override routes when
+the host route table changes. These features are controlled by Pangolin;
+upstream's CLI flags and environment variables are unchanged from 1.17.0,
+so existing UCI settings and the LuCI form remain compatible. Upgrading
+does not enable native routing or change OpenWrt network/firewall settings.
 
 ## One-line install
 
@@ -127,7 +133,7 @@ The status panel reports:
 - the latest 50 `logread` lines;
 - Start, Stop and Restart controls.
 
-The upstream server version is intentionally not shown: Newt 1.17.0 does not
+The upstream server version is intentionally not shown: Newt 1.18.1 does not
 expose a stable local API for it, and parsing log messages would be brittle.
 
 Equivalent UCI setup:
@@ -280,8 +286,8 @@ Enable GitHub Pages with **Source: GitHub Actions**, add the secret, then push a
 tag:
 
 ```sh
-git tag v1.17.0-r1
-git push origin v1.17.0-r1
+git tag v1.18.1-r1
+git push origin v1.18.1-r1
 
 # An independent luci-app-zt release uses its own versioned tag:
 git tag luci-app-zt-v0.1.0-r1
@@ -365,4 +371,4 @@ it is not legal advice.
 - [OpenWrt APK index implementation](https://github.com/openwrt/openwrt/blob/openwrt-25.12/package/Makefile)
 - [OpenWrt 25.12 ZeroTier package](https://github.com/openwrt/packages/tree/openwrt-25.12/net/zerotier)
 - [OpenWrt ZeroTier guide](https://openwrt.org/docs/guide-user/services/vpn/zerotier)
-- [Newt 1.17.0 source and license](https://github.com/fosrl/newt/tree/1.17.0)
+- [Newt 1.18.1 source and license](https://github.com/fosrl/newt/tree/1.18.1)
