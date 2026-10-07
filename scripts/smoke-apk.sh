@@ -22,6 +22,7 @@ mkdir -p "$extract_root/newt" "$extract_root/luci" "$extract_root/luci-zt"
 "$apk_bin" adbdump --format json "$luci_apk" >"$extract_root/luci-metadata.json"
 "$apk_bin" adbdump --format json "$luci_zt_apk" >"$extract_root/luci-zt-metadata.json"
 grep -Fq 'newt-launcher-migration-' "$extract_root/newt-metadata.json"
+grep -Fq 'Newt restarted after package upgrade' "$extract_root/newt-metadata.json"
 
 # apk(8) manifest queries installed packages and therefore needs an APK
 # database.  For build artifacts, extract the v3 package directly and inspect

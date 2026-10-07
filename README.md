@@ -41,6 +41,9 @@ the host route table changes. These features are controlled by Pangolin;
 upstream's CLI flags and environment variables are unchanged from 1.17.0,
 so existing UCI settings and the LuCI form remain compatible. Upgrading
 does not enable native routing or change OpenWrt network/firewall settings.
+Starting with 1.18.1-r1, package upgrades explicitly restart a running Newt
+instance so it loads the replacement binary; OpenWrt's default post-install
+`start` action alone can leave the previous executable running under procd.
 
 ## One-line install
 

@@ -88,6 +88,16 @@ if [ -z "$${IPKG_INSTROOT}" ] && \
 	/etc/init.d/newt restart
 	logger -t pangolin-newt "legacy launcher migrated; backup: $${backup}"
 fi
+# OpenWrt default_postinst uses `start`, including on APK upgrades. procd
+# retains an unchanged instance even when its executable was replaced. Ensure
+# a running package-managed instance actually loads the newly installed binary.
+if [ -z "$${IPKG_INSTROOT}" ] && \
+   [ "$${PKG_UPGRADE}" = "1" ] && \
+   grep -Fq '/usr/libexec/newt-run' /etc/init.d/newt && \
+   /etc/init.d/newt running >/dev/null 2>&1; then
+	/etc/init.d/newt restart || exit $$?
+	logger -t pangolin-newt 'Newt restarted after package upgrade'
+fi
 exit 0
 endef
 
