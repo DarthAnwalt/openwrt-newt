@@ -17,6 +17,7 @@ export GOTOOLCHAIN=local CGO_ENABLED=0
 export GOCACHE="$sdk_dir/tmp/newt-test-cache"
 cd "$source_dir"
 "$go_bin" version
+"$go_bin" version | grep -Fq "go$GO_TOOLCHAIN_VERSION "
 "$go_bin" test -timeout 5m ./...
 
 network_test="$(mktemp "$sdk_dir/tmp/newt-network-test.XXXXXX")"

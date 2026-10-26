@@ -25,14 +25,17 @@ is not a substitute for a full tunnel/GUI test on a router running 25.12.6.
 | Compatibility SDK | 25.12.6, mediatek/filogic |
 | Package architecture | aarch64_cortex-a53 |
 | Newt | 1.19.0-r1 |
+| Go compiler / embedded standard library | 1.26.10 (security backport) |
 | luci-app-zt | 0.1.0-r1 |
 | Official OpenWrt ZeroTier on 25.12.5 | 1.16.0-r1 |
 | Package manager | OpenWrt APK v3 |
 
 Exact SDK, feed commits and checksums are recorded in
 [`versions.env`](versions.env). Newt is built from the exact upstream tag
-using the OpenWrt Go toolchain. OpenWrt 25.12.5's pinned packages feed provides
-Go 1.26, matching Newt 1.19.0's Go 1.26 requirement. The additional SDK and
+using the OpenWrt Go build system. Both pinned feeds provide Go 1.26, matching
+Newt 1.19.0's Go 1.26 requirement. Small audited recipe patches update their
+compiler to checksum-pinned **Go 1.26.10**, so Newt's embedded standard library
+includes the current certificate-validation security fixes. The additional SDK and
 feed pins are in [`sdk/25.12.6.env`](sdk/25.12.6.env).
 
 Upstream now describes Newt as being phased out in favour of the Pangolin CLI.
@@ -274,6 +277,8 @@ packages and LuCI feed commits, builds all three APKs and checks their metadata
 and contents with the SDK's APK tool. It also checks the ELF architecture,
 static linking and private UCI file permissions. With `qemu-aarch64` installed,
 it executes the packaged ARM64 binary and checks its version.
+The SDK feed stays at its recorded commit; the only compiler recipe changes
+are the Go point-release number and its official source archive checksum.
 
 To run the separate 25.12.6 compatibility build without replacing release
 build outputs, use:

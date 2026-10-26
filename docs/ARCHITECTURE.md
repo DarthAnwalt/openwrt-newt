@@ -44,6 +44,12 @@ confirmed the replacement behavior.
 
 Newt 1.19.0 declares Go 1.26.0. The packages feed commit shipped with OpenWrt
 25.12.5 provides Go 1.26 and knows the Cortex-A53 `GOARM64=v8.0` baseline.
+The compiler recipe is backported to **Go 1.26.10** by changing only its point
+release and official source checksum; the same backport is applied to the
+25.12.6 profile (originally Go 1.26.9). This prevents shipping older embedded
+TLS/X.509 standard-library code just to retain an older SDK baseline. The
+patches and checksum are versioned in this repository, and CI checks the
+compiler actually used by the tests.
 The upstream build already sets `CGO_ENABLED=0`, so the result is portable
 across musl targets of the same architecture.
 
