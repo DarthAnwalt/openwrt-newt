@@ -39,6 +39,9 @@ for path in usr/bin/newt etc/init.d/newt etc/config/newt usr/libexec/newt-run us
 done
 
 test "$(stat -c '%a' "$extract_root/newt/etc/config/newt")" = 600
+go_bin="$(dirname "$apk_bin")/../../hostpkg/lib/go-${GO_TOOLCHAIN_VERSION%.*}/bin/go"
+"$go_bin" version -m "$extract_root/newt/usr/bin/newt" >"$extract_root/newt-buildinfo.txt"
+grep -Fq ": go$GO_TOOLCHAIN_VERSION" "$extract_root/newt-buildinfo.txt"
 readelf -h "$extract_root/newt/usr/bin/newt" | grep -q 'Machine:.*AArch64'
 if readelf -l "$extract_root/newt/usr/bin/newt" | grep -q INTERP; then
 	echo 'Newt must be statically linked; an ELF interpreter was found.' >&2
