@@ -112,6 +112,15 @@ if grep -Eq 'procd_(set|append)_param (command|env).*secret' package/pangolin-ne
 fi
 
 source versions.env
+(
+	source sdk/25.12.6.env
+	test "$OPENWRT_VERSION" = 25.12.6
+	test "$SDK_FILENAME" = "openwrt-sdk-${OPENWRT_VERSION}-mediatek-filogic_gcc-14.3.0_musl.Linux-x86_64.tar.zst"
+	test "$SDK_URL" = "https://downloads.openwrt.org/releases/${OPENWRT_VERSION}/targets/mediatek/filogic/${SDK_FILENAME}"
+	[[ "$SDK_SHA256" =~ ^[0-9a-f]{64}$ ]]
+	[[ "$PACKAGES_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+	[[ "$LUCI_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+)
 grep -q "^PKG_VERSION:=$NEWT_VERSION$" package/pangolin-newt/Makefile
 grep -q "^PKG_RELEASE:=$NEWT_RELEASE$" package/pangolin-newt/Makefile
 grep -q "^PKG_VERSION:=$NEWT_VERSION$" luci-app-pangolin-newt/Makefile

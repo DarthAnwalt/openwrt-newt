@@ -42,10 +42,23 @@ confirmed the replacement behavior.
 
 ## Source build decision
 
-Newt 1.18.1 declares Go 1.26.0. The packages feed commit shipped with OpenWrt
+Newt 1.19.0 declares Go 1.26.0. The packages feed commit shipped with OpenWrt
 25.12.5 provides Go 1.26 and knows the Cortex-A53 `GOARM64=v8.0` baseline.
 The upstream build already sets `CGO_ENABLED=0`, so the result is portable
 across musl targets of the same architecture.
+
+Release builds retain the 25.12.5 baseline in `versions.env`. The separately
+pinned `sdk/25.12.6.env` profile is selected with `SDK_PROFILE=25.12.6` for
+compatibility CI. Both builds verify that the SDK's checked-out packages and
+LuCI feed commits match the manifest. CI executes the extracted ARM64 binary
+with QEMU, tests the patched upstream source and runs the routing regression
+inside an isolated Linux network namespace. This does not claim a full
+hardware/GUI/tunnel test on a 25.12.6 firmware installation.
+
+Newt 1.19's client identity headers are populated from Pangolin's WebSocket
+configuration; no new local CLI/UCI switch exists. The launcher and LuCI form
+therefore retain their existing options. The self-update guard and AGPL
+source publication remain unchanged.
 
 The source build is preferred over repackaging the upstream binary because it
 uses OpenWrt's pinned toolchain, carries the exact source/license into the
