@@ -10,36 +10,45 @@ the Pangolin tunnel client, plus a ZeroTier management application:
   OpenWrt `zerotier` package under **Services → ZeroTier**;
 - a signed APK v3 repository published by GitHub Actions and GitHub Pages.
 
-The initial target is OpenWrt 25.12.5 on `mediatek/filogic`
+The supported build targets are OpenWrt 25.12.5 and 25.12.6 on `mediatek/filogic`
 (`aarch64_cortex-a53`). The same build supports both the GL.iNet Brume 2 and
 Huasifei WH3000 Pro; no device-specific package is required. The CI matrix is
-ready for additional SDK targets.
+ready for additional SDK targets. Release APKs retain the 25.12.5 SDK baseline;
+CI also builds against the checksum-pinned 25.12.6 SDK. A successful SDK build
+is not a substitute for a full tunnel/GUI test on a router running 25.12.6.
 
 ## Current versions
 
 | Component | Version |
 |---|---|
-| OpenWrt SDK | 25.12.5, mediatek/filogic |
+| Release SDK | 25.12.5, mediatek/filogic |
+| Compatibility SDK | 25.12.6, mediatek/filogic |
 | Package architecture | aarch64_cortex-a53 |
-| Newt | 1.18.1-r1 |
+| Newt | 1.19.0-r1 |
+| Go compiler / embedded standard library | 1.26.10 (security backport) |
 | luci-app-zt | 0.1.0-r1 |
 | Official OpenWrt ZeroTier on 25.12.5 | 1.16.0-r1 |
 | Package manager | OpenWrt APK v3 |
 
 Exact SDK, feed commits and checksums are recorded in
 [`versions.env`](versions.env). Newt is built from the exact upstream tag
-using the OpenWrt Go toolchain. OpenWrt 25.12.5's pinned packages feed provides
-Go 1.26, matching Newt 1.18.1's Go 1.26 requirement.
+using the OpenWrt Go build system. Both pinned feeds provide Go 1.26, matching
+Newt 1.19.0's Go 1.26 requirement. Small audited recipe patches update their
+compiler to checksum-pinned **Go 1.26.10**, so Newt's embedded standard library
+includes the current certificate-validation security fixes. The additional SDK and
+feed pins are in [`sdk/25.12.6.env`](sdk/25.12.6.env).
 
 Upstream now describes Newt as being phased out in favour of the Pangolin CLI.
-This repository continues to package the Newt 1.18 release for
+This repository continues to package the Newt 1.19 release for
 OpenWrt while tracking that migration path; it does not silently replace an
 existing Newt installation with a different client.
 
-Newt 1.18 adds exit-node support and 1.18.1 maintains override routes when
-the host route table changes. These features are controlled by Pangolin;
-upstream's CLI flags and environment variables are unchanged from 1.17.0,
-so existing UCI settings and the LuCI form remain compatible. Upgrading
+Newt 1.19.0 adds client identity headers (`Remote-*`) for private HTTP resources
+and fixes stale health-check settings after a new connection payload. The
+identity mapping comes from Pangolin, not from a new local UCI option. The
+CLI/environment configuration is unchanged from 1.18.1, so the existing LuCI
+form remains compatible. Existing exit-node/override-route functionality is
+retained. Upgrading
 does not enable native routing or change OpenWrt network/firewall settings.
 Starting with 1.18.1-r1, package upgrades explicitly restart a running Newt
 instance so it loads the replacement binary; OpenWrt's default post-install
@@ -136,7 +145,7 @@ The status panel reports:
 - the latest 50 `logread` lines;
 - Start, Stop and Restart controls.
 
-The upstream server version is intentionally not shown: Newt 1.18.1 does not
+The upstream server version is intentionally not shown: Newt 1.19.0 does not
 expose a stable local API for it, and parsing log messages would be brittle.
 
 Equivalent UCI setup:
@@ -265,7 +274,26 @@ The supported build host is x86_64 Linux:
 
 The build script downloads the exact 25.12.5 SDK, verifies its SHA256, pins the
 packages and LuCI feed commits, builds all three APKs and checks their metadata
-and contents with the SDK's APK tool.
+and contents with the SDK's APK tool. It also checks the ELF architecture,
+static linking and private UCI file permissions. With `qemu-aarch64` installed,
+it executes the packaged ARM64 binary and checks its version.
+The SDK feed stays at its recorded commit; the only compiler recipe changes
+are the Go point-release number and its official source archive checksum.
+
+To run the separate 25.12.6 compatibility build without replacing release
+build outputs, use:
+
+```sh
+SDK_PROFILE=25.12.6 BUILD_ROOT="$PWD/work/25.12.6" OUTPUT_DIR="$PWD/dist/25.12.6/aarch64_cortex-a53" ./scripts/build.sh
+```
+
+CI performs both SDK builds, requires the QEMU execution check, and runs all
+upstream Go tests against the patched source using each SDK's Go compiler.
+The Linux routing regression runs in a fresh network namespace, not the
+host's routing table. Firmware installation, reboot, tunnel authentication
+and browser interaction on 25.12.6 still require a hardware test; the CI
+checks do not claim to cover them. The signed repository URL remains under
+`repository/25.12/aarch64_cortex-a53`, with no key or feed migration required.
 
 macOS can run static validation, but the official SDK archive contains Linux
 x86_64 host tools. Use a Linux VM or GitHub Actions for the full build.
@@ -289,8 +317,8 @@ Enable GitHub Pages with **Source: GitHub Actions**, add the secret, then push a
 tag:
 
 ```sh
-git tag v1.18.1-r1
-git push origin v1.18.1-r1
+git tag v1.19.0-r1
+git push origin v1.19.0-r1
 
 # An independent luci-app-zt release uses its own versioned tag:
 git tag luci-app-zt-v0.1.0-r1
@@ -374,4 +402,4 @@ it is not legal advice.
 - [OpenWrt APK index implementation](https://github.com/openwrt/openwrt/blob/openwrt-25.12/package/Makefile)
 - [OpenWrt 25.12 ZeroTier package](https://github.com/openwrt/packages/tree/openwrt-25.12/net/zerotier)
 - [OpenWrt ZeroTier guide](https://openwrt.org/docs/guide-user/services/vpn/zerotier)
-- [Newt 1.18.1 source and license](https://github.com/fosrl/newt/tree/1.18.1)
+- [Newt 1.19.0 source and license](https://github.com/fosrl/newt/tree/1.19.0)

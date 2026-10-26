@@ -7,6 +7,12 @@ umask 022
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 source "$repo_root/versions.env"
 
+case "${SDK_PROFILE:-$OPENWRT_VERSION}" in
+	25.12.5) ;;
+	25.12.6) source "$repo_root/sdk/25.12.6.env" ;;
+	*) echo 'Unsupported SDK_PROFILE; use 25.12.5 or 25.12.6.' >&2; exit 2 ;;
+esac
+
 build_root="${BUILD_ROOT:-$repo_root/work}"
 output_dir="${OUTPUT_DIR:-$repo_root/dist/aarch64_cortex-a53}"
 sdk_archive="$build_root/$SDK_FILENAME"
@@ -38,6 +44,14 @@ patch --batch --forward --strip=1 --directory "$sdk_dir" \
 	# --root=package base feed provides build dependencies such as ucode and Lua.
 	# Replacing this file with only packages/luci makes lucihttp fail to compile.
 	./scripts/feeds update base packages luci
+	[[ "$(git -C feeds/packages rev-parse HEAD)" == "$PACKAGES_COMMIT" ]]
+	[[ "$(git -C feeds/luci rev-parse HEAD)" == "$LUCI_COMMIT" ]]
+	# Newt statically includes the Go standard library. Keep the SDK/feed
+	# baseline, but backport its compiler recipe to the security point release.
+	patch --batch --forward --strip=1 --directory feeds/packages \
+		--input "$repo_root/patches/golang-${OPENWRT_VERSION}-${GO_TOOLCHAIN_VERSION}.patch"
+	grep -Fxq "PKG_HASH:=$GO_TOOLCHAIN_SOURCE_SHA256" feeds/packages/lang/golang/golang1.26/Makefile
+	grep -Fxq "GO_VERSION_PATCH:=${GO_TOOLCHAIN_VERSION##*.}" feeds/packages/lang/golang/golang1.26/Makefile
 	./scripts/feeds install -p base \
 		ca-certificates jsonfilter libjson-c libmd libnl-tiny libubox \
 		lua rpcd ubus uci ucode

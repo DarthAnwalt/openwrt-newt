@@ -38,6 +38,24 @@ for path in usr/bin/newt etc/init.d/newt etc/config/newt usr/libexec/newt-run us
 	test -e "$extract_root/newt/$path"
 done
 
+test "$(stat -c '%a' "$extract_root/newt/etc/config/newt")" = 600
+go_bin="$(dirname "$apk_bin")/../../hostpkg/lib/go-${GO_TOOLCHAIN_VERSION%.*}/bin/go"
+"$go_bin" version -m "$extract_root/newt/usr/bin/newt" >"$extract_root/newt-buildinfo.txt"
+grep -Fq ": go$GO_TOOLCHAIN_VERSION" "$extract_root/newt-buildinfo.txt"
+readelf -h "$extract_root/newt/usr/bin/newt" | grep -q 'Machine:.*AArch64'
+if readelf -l "$extract_root/newt/usr/bin/newt" | grep -q INTERP; then
+	echo 'Newt must be statically linked; an ELF interpreter was found.' >&2
+	exit 1
+fi
+if command -v qemu-aarch64 >/dev/null 2>&1; then
+	version="$(qemu-aarch64 "$extract_root/newt/usr/bin/newt" --version)"
+	[[ "$version" == "Newt version $NEWT_VERSION" ]]
+	echo "ARM64 execution check passed: $version"
+elif [[ "${REQUIRE_QEMU:-0}" == 1 ]]; then
+	echo 'qemu-aarch64 is required for this build verification.' >&2
+	exit 1
+fi
+
 if grep -Eq '^set -[^[:space:]]*u' "$extract_root/newt/usr/libexec/newt-run"; then
 	echo 'Packaged newt-run enables nounset and is unsafe with OpenWrt shell helpers.' >&2
 	exit 1
